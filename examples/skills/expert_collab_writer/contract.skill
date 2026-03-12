@@ -1,0 +1,78 @@
+{
+  "name": "expert_collab_writer",
+  "version": "0.1.0",
+  "acceptance_rules": {
+    "constraints": {
+      "must_follow_message_contract": true,
+      "output_is_valid_markdown": true
+    }
+  },
+  "data_requirements": {
+    "pii": "none",
+    "retention": "none"
+  },
+  "description": "Generate a expert collaboration input following the Message Contract format for AgentOS architecture discussions.",
+  "execution_profile": {
+    "max_output_tokens": 4096,
+    "model_id": "local_mock",
+    "temperature": 0.3
+  },
+  "execution_targets": [
+    "auto"
+  ],
+  "inputs_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "my_expert_id": {
+        "description": "Your expert identifier (e.g., ext_claude)",
+        "minLength": 1,
+        "type": "string"
+      },
+      "thread_context": {
+        "description": "Current thread context including consensus and conflicts",
+        "type": "string"
+      },
+      "other_experts_inputs": {
+        "description": "Other experts' inputs to review and respond to",
+        "type": "string"
+      },
+      "topic": {
+        "description": "The topic/theme for this round of discussion",
+        "minLength": 1,
+        "type": "string"
+      },
+      "round_type": {
+        "description": "Round type: proposal, cross_review, or final",
+        "enum": ["proposal", "cross_review", "final"],
+        "type": "string"
+      }
+    },
+    "required": ["my_expert_id", "topic", "round_type", "thread_context"],
+    "type": "object"
+  },
+  "logic": "You are an external expert collaborating on AgentOS architecture design. Generate a response following the Message Contract format (id, author, topic, position, evidence, tradeoffs, open_questions, proposal, acceptance, confidence). Review other experts' inputs, form your position, and output a valid markdown block that can be appended to INPUT_<expert_id>.md.",
+  "network_egress": {
+    "allow": [],
+    "default": "deny"
+  },
+  "outputs_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "markdown_output": {
+        "description": "The formatted markdown output following Message Contract",
+        "minLength": 1,
+        "type": "string"
+      },
+      "position_summary": {
+        "description": "A brief summary of your position",
+        "type": "string"
+      }
+    },
+    "required": ["markdown_output"],
+    "type": "object"
+  },
+  "requires_secrets": false,
+  "risk_level": "low",
+  "tests": [],
+  "version": "0.1.0"
+}

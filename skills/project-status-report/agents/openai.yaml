@@ -1,0 +1,4 @@
+interface:
+  display_name: "Project Status Report"
+  short_description: "Structure project updates by status, gap, and next actions"
+  default_prompt: "Use $project-status-report to draft a concise project update covering current state, target state, gaps, and next steps."

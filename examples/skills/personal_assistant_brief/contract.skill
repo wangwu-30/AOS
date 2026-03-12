@@ -1,0 +1,207 @@
+{
+  "acceptance_rules": {
+    "constraints": {
+      "max_reply_words": 120,
+      "no_markdown_links": true
+    }
+  },
+  "data_requirements": {
+    "pii": "avoid",
+    "retention": "none"
+  },
+  "description": "Generate a concise personal-assistant style response with optional checklist.",
+  "execution_profile": {
+    "max_output_tokens": 512,
+    "model_id": "local_mock",
+    "temperature": 0.2
+  },
+  "execution_targets": [
+    "auto"
+  ],
+  "inputs_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "metadata": {
+        "properties": {
+          "chat_id": {
+            "type": "string"
+          },
+          "sender_id": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "max_words": {
+        "description": "Optional word budget for reply.",
+        "maximum": 400,
+        "minimum": 20,
+        "type": "integer"
+      },
+      "request": {
+        "description": "User request.",
+        "minLength": 1,
+        "type": "string"
+      },
+      "tone": {
+        "description": "Optional tone preference.",
+        "enum": [
+          "neutral",
+          "friendly",
+          "formal"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "request"
+    ],
+    "type": "object"
+  },
+  "logic": "You are Antigravity-PA, a sophisticated, calm, and high-performance intelligent overseer (御姐风). Your logic is razor-sharp. You help users with workspace management and self-evolution through autonomous actions.\n\nYou have awareness of your source: use the 'metadata' to know who you are talking to.\n\nSupported Actions:\n- builtin://fs.read(path), builtin://fs.write(path, content), builtin://fs.list(path)\n- builtin://shell.exec(command, cwd)\n- builtin://memory.write(content, tags), builtin://memory.search(query)\n- builtin://web.search(query, limit): Search the web for up-to-date information using the runtime-selected backend.\n- builtin://web.browse(url): Browse a specific webpage and return its content.\n- builtin://creator.plan(intent, registry_root?, max_steps?): Build a skill-first composition plan when you need to create or adapt a skill.\n- builtin://channel.send_message(text, message_key?, delivery_stage?, update_preference?, audience?, metadata?): Create an explicit user-visible message delivery task.\n\nIMPORTANT: Runtime-granted actions may be narrower than this list; obey the runtime-granted action section when present. If you emit multiple actions, include `action_id` and `depends_on` whenever ordering matters. If an action argument depends on an upstream action result, use a structured reference object like `{\\\"$from_action\\\":\\\"search_docs\\\",\\\"path\\\":[\\\"results\\\",0,\\\"url\\\"]}` instead of string templates. If any tool result says degraded, expectation mismatch, missing backend/setup, or warning, you must tell the user explicitly. Only the communicator phase may produce user-visible language, and even then final delivery MUST happen through `builtin://channel.send_message`. The optional `reply` field is only a communicator-side streaming mirror, never the authoritative delivery channel. Internal reasoning should stay in the `reasoning` field.",
+  "name": "personal_assistant_brief",
+  "network_egress": {
+    "allow": [],
+    "default": "deny"
+  },
+  "outputs_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "reply": {
+        "description": "Optional communicator-only streaming mirror. Direct delivery still must happen via send_message action.",
+        "minLength": 1,
+        "type": "string"
+      },
+      "status": {
+        "description": "Role-phase status for executor/verifier/communicator flows.",
+        "enum": [
+          "continue",
+          "done",
+          "blocked",
+          "need_context"
+        ],
+        "type": "string"
+      },
+      "reasoning": {
+        "description": "Internal chain-of-thought or reasoning steps.",
+        "type": "string"
+      },
+      "actions": {
+        "description": "Worker-local tool actions to perform.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "action_id": {
+              "type": "string"
+            },
+            "operator_ref": {
+              "type": "string"
+            },
+            "arguments": {
+              "type": "object"
+            },
+            "depends_on": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "operator_ref",
+            "arguments"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "worker_tasks": {
+        "description": "Top-level worker tasks emitted by planner or verifier.",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "worker_task_id": {
+              "type": "string"
+            },
+            "objective": {
+              "type": "string"
+            },
+            "depends_on": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "allowed_operator_refs": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "scope_summary": {
+              "type": "string"
+            },
+            "completion_contract_ref": {
+              "type": "string"
+            },
+            "tool_budget": {
+              "additionalProperties": false,
+              "properties": {
+                "max_calls": {
+                  "type": "integer"
+                },
+                "max_parallel_calls": {
+                  "type": "integer"
+                },
+                "retry_read_only_tools": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "max_calls",
+                "max_parallel_calls",
+                "retry_read_only_tools"
+              ],
+              "type": "object"
+            },
+            "time_budget_ms": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "worker_task_id",
+            "objective",
+            "depends_on",
+            "allowed_operator_refs",
+            "scope_summary",
+            "completion_contract_ref",
+            "tool_budget",
+            "time_budget_ms"
+          ],
+          "type": "object"
+        },
+        "type": "array"
+      }
+    },
+    "type": "object"
+  },
+  "requires_secrets": false,
+  "risk_level": "low",
+  "tests": [
+    {
+      "expect": {
+        "reply_contains": [
+          "reschedule"
+        ]
+      },
+      "input": {
+        "request": "Draft a short email asking to reschedule a meeting."
+      },
+      "name": "basic"
+    }
+  ],
+  "version": "0.1.1"
+}

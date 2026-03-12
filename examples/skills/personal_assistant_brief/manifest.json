@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "signer_id": "demo",
+  "timestamp": 1770940800,
+  "files": {
+    "contract.skill": "764279a71002d7e56144cce0ea1481497fa8ea6f13f980cb7dc263f340b113fe",
+    "artifacts/outputs_schema.json": "91199552c8203954feda3310e5f2cce4f927351a23217fb3d741194ff2bb6f15",
+    "artifacts/acceptance_rules.json": "38d9f05a5d1816e0ef2ea2cd3f703e9404b231dd7bcf66754807fb982968370d",
+    "artifacts/execution_profile.json": "96cde162b5ff3edcc62e64fc44b3c905df76b4751344da6b71a07be8f219e27a",
+    "artifacts/inputs_schema.json": "91164cf547dc81828419b11e8ad8f581fcecc371b16f1e156b564a031851c116",
+    "artifacts/compiled/intent_snapshot.json": "26011f6805d96d68dd3b6e43ef05272f6feb575d22499e63f1a0f07e47faa094",
+    "artifacts/compiled/prompt_bundle.json": "aa0922cf36cb6ee4134dde70eeb041fb6541adc4416af95f9cff2b88494beef3",
+    "artifacts/compiled/execution_ir.json": "75ba2b99c3f2d4a9bf8d5258408c1cecf570f6c5f6c56c678e25989d97987caa",
+    "dist/personal_assistant_brief/outputs_schema.json": "91199552c8203954feda3310e5f2cce4f927351a23217fb3d741194ff2bb6f15",
+    "dist/personal_assistant_brief/acceptance_rules.json": "38d9f05a5d1816e0ef2ea2cd3f703e9404b231dd7bcf66754807fb982968370d",
+    "dist/personal_assistant_brief/execution_profile.json": "96cde162b5ff3edcc62e64fc44b3c905df76b4751344da6b71a07be8f219e27a",
+    "dist/personal_assistant_brief/inputs_schema.json": "91164cf547dc81828419b11e8ad8f581fcecc371b16f1e156b564a031851c116",
+    "dist/personal_assistant_brief/compiled/intent_snapshot.json": "26011f6805d96d68dd3b6e43ef05272f6feb575d22499e63f1a0f07e47faa094",
+    "dist/personal_assistant_brief/compiled/prompt_bundle.json": "7040bdc7e6a5b1ee616a93d4945a7b71b0e88669d4733fc00141623938075161",
+    "dist/personal_assistant_brief/compiled/execution_ir.json": "75ba2b99c3f2d4a9bf8d5258408c1cecf570f6c5f6c56c678e25989d97987caa"
+  }
+}

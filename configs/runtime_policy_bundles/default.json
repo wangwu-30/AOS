@@ -1,0 +1,40 @@
+{
+  "schema_version": "1.0.0",
+  "workspace_policy_id": "default",
+  "workspace_scope": "default",
+  "user_preference_profile": {
+    "communication_style": [
+      "clear",
+      "honest",
+      "concise"
+    ],
+    "response_language": null,
+    "active_hours_local": [],
+    "preferred_topics": [],
+    "risk_tolerance": "balanced"
+  },
+  "execution_mode_policy": {
+    "default_mode": "balanced",
+    "allow_user_override": true
+  },
+  "data_sensitivity_policy": {
+    "default_level": "L1",
+    "storage_policy": {
+      "L0": "process_only",
+      "L1": "local_only",
+      "L2": "local_or_sync"
+    },
+    "external_transfer_requires_confirmation": true
+  },
+  "proactivity_policy": {
+    "enabled": false,
+    "quiet_hours_local": [],
+    "notify_on_mentions_only": true,
+    "max_pushes_per_day": 0
+  },
+  "external_evidence_policy": {
+    "search_rounds_max": 2,
+    "browse_candidates_per_search_max": 3,
+    "total_browse_steps_max": 4
+  }
+}

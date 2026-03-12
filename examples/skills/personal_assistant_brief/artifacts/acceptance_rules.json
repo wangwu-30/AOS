@@ -1,0 +1,6 @@
+{
+  "constraints": {
+    "max_reply_words": 120,
+    "no_markdown_links": true
+  }
+}

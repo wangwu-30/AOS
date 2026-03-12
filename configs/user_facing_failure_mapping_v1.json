@@ -1,0 +1,41 @@
+{
+  "entries": [
+    {
+      "phase_outcome": "blocked",
+      "reason_hint": "external_evidence_candidate_exhausted",
+      "reason_class": "external_evidence_candidate_exhausted",
+      "retryable": true,
+      "template_key": "blocker.external_evidence_candidate_exhausted",
+      "user_actionability": "retry_or_change_source",
+      "next_step_hint": "Explain that candidate sources were tried within the ordinary search and browse budget but none became verified readable evidence."
+    },
+    {
+      "phase_outcome": "blocked",
+      "reason_hint": "external_evidence_insufficient",
+      "reason_class": "external_evidence_insufficient",
+      "retryable": true,
+      "template_key": "blocker.external_evidence_insufficient",
+      "user_actionability": "retry_or_change_source",
+      "next_step_hint": "Explain that verified external evidence was insufficient and another retry or source may be needed."
+    },
+    {
+      "phase_outcome": "blocked",
+      "reason_hint": "multimodal_chain_unsupported",
+      "reason_class": "multimodal_chain_unsupported",
+      "retryable": false,
+      "template_key": "blocker.multimodal_chain_unsupported",
+      "user_actionability": "change_backend_or_retry",
+      "next_step_hint": "Explain that the current backend/model path cannot verify the required attachments and a supporting model path is needed."
+    },
+    {
+      "phase_outcome": "blocked",
+      "reason_hint": "runtime_blocked",
+      "reason_class": "runtime_blocked",
+      "retryable": true,
+      "template_key": "blocker.runtime_blocked",
+      "user_actionability": "retry"
+    }
+  ],
+  "schema_version": "1.0.0",
+  "type": "user_facing_failure_mapping_v1"
+}

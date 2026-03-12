@@ -1,0 +1,7 @@
+{
+  "executor_kind": "local_llm_json",
+  "policy_hints": {},
+  "required_capabilities": [],
+  "schema_version": "1.0.0",
+  "streaming_capable": false
+}

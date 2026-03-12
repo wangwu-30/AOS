@@ -1,0 +1,42 @@
+[project]
+name = "agentos-next"
+version = "0.1.0"
+description = "AgentOS Next: docs-first kernel + protocol + compiler skeleton"
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "UNLICENSED" }
+
+dependencies = [
+  "playwright>=1.52,<2",
+]
+
+[project.scripts]
+agentos-next = "agentos_next.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.6.0",
+]
+crypto = [
+  "cryptography>=41.0.0",
+]
+yaml = [
+  "PyYAML>=6.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

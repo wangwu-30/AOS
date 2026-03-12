@@ -1,0 +1,43 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "max_words": {
+      "description": "Optional word budget for reply.",
+      "maximum": 400,
+      "minimum": 20,
+      "type": "integer"
+    },
+    "metadata": {
+      "properties": {
+        "chat_id": {
+          "type": "string"
+        },
+        "sender_id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "request": {
+      "description": "User request.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "tone": {
+      "description": "Optional tone preference.",
+      "enum": [
+        "neutral",
+        "friendly",
+        "formal"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "request"
+  ],
+  "type": "object"
+}

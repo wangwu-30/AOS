@@ -1,0 +1,16 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "markdown_output": {
+      "description": "The formatted markdown output following Message Contract",
+      "minLength": 1,
+      "type": "string"
+    },
+    "position_summary": {
+      "description": "A brief summary of your position",
+      "type": "string"
+    }
+  },
+  "required": ["markdown_output"],
+  "type": "object"
+}

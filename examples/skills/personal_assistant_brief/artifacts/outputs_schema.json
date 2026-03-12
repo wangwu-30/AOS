@@ -1,0 +1,121 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "actions": {
+      "description": "Worker-local tool actions to perform.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "type": "object"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "operator_ref": {
+            "type": "string"
+          },
+          "action_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "operator_ref",
+          "arguments"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "worker_tasks": {
+      "description": "Top-level worker tasks emitted by planner or verifier.",
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "allowed_operator_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "completion_contract_ref": {
+            "type": "string"
+          },
+          "depends_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "objective": {
+            "type": "string"
+          },
+          "scope_summary": {
+            "type": "string"
+          },
+          "time_budget_ms": {
+            "type": "integer"
+          },
+          "tool_budget": {
+            "additionalProperties": false,
+            "properties": {
+              "max_calls": {
+                "type": "integer"
+              },
+              "max_parallel_calls": {
+                "type": "integer"
+              },
+              "retry_read_only_tools": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "max_calls",
+              "max_parallel_calls",
+              "retry_read_only_tools"
+            ],
+            "type": "object"
+          },
+          "worker_task_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "worker_task_id",
+          "objective",
+          "depends_on",
+          "allowed_operator_refs",
+          "scope_summary",
+          "completion_contract_ref",
+          "tool_budget",
+          "time_budget_ms"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "reasoning": {
+      "description": "Internal chain-of-thought or reasoning steps.",
+      "type": "string"
+    },
+    "reply": {
+      "description": "Optional communicator-only streaming mirror. Direct delivery still must happen via send_message action.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "status": {
+      "description": "Role-phase status for executor/verifier/communicator flows.",
+      "enum": [
+        "continue",
+        "done",
+        "blocked",
+        "need_context"
+      ],
+      "type": "string"
+    }
+  },
+  "type": "object"
+}

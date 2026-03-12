@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+
+.env
+.venv/
+venv/
+
+dist/
+build/
+*.egg-info/
+
+# Local demo artifacts
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Credentials/tokens
+*token*.json
+client_secret.json
+

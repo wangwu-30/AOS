@@ -1,0 +1,30 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "my_expert_id": {
+      "description": "Your expert identifier (e.g., ext_claude)",
+      "minLength": 1,
+      "type": "string"
+    },
+    "thread_context": {
+      "description": "Current thread context including consensus and conflicts",
+      "type": "string"
+    },
+    "other_experts_inputs": {
+      "description": "Other experts' inputs to review and respond to",
+      "type": "string"
+    },
+    "topic": {
+      "description": "The topic/theme for this round of discussion",
+      "minLength": 1,
+      "type": "string"
+    },
+    "round_type": {
+      "description": "Round type: proposal, cross_review, or final",
+      "enum": ["proposal", "cross_review", "final"],
+      "type": "string"
+    }
+  },
+  "required": ["my_expert_id", "topic", "round_type", "thread_context"],
+  "type": "object"
+}

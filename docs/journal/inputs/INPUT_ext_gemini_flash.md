@@ -1,0 +1,26 @@
+# ext_gemini_flash Input - Round 1 (Thread 003)
+
+- `id`: `bus-027`
+- `author`: `ext_gemini_flash`
+- `topic`: Remote API 对 Scheduler 与 Channel 的扩展支持评估
+- `position`: 支持将 Scheduler 与 Channel 抽象为标准 ExecuteRequest 的变体，通过 policy_context 扩展治理能力。
+- `evidence`: `docs/specs/REMOTE_SANDBOX_API.md` 中的 `policy_context` 扩展点。
+- `tradeoffs`:
+    - 优点: 保持 API 简洁，复用现有执行链路与安全闸门。
+    - 缺点: 对于长连接（Channel）或超长延时（Scheduler），Polling 机制效率较低，未来需引入 Webhook 或 SSE。
+- `open_questions`:
+    - 内核 Orchestrator 是否应当承载 Cron 触发逻辑？还是由远程 Sandbox 承载？
+    - Channel 的双向通信（异步推回）是否需要在 MVP 阶段支持？
+- `proposal`:
+    - 1. **Scheduler 扩展**: 在 `ExecuteRequest` 中增加 `trigger` 字段（可选），支持 `cron` 或 `at` 语义。若存在该字段，Executor 负责按时触发。
+    - 2. **Channel 扩展**: 引入 `streaming: true` 到 `policy_context`，并定义 `POST /v1/callback` 用于远程 Sandbox 回传实时消息。
+    - 3. **治理补项**: 在 `policy_context` 中固化 `budget_limit` (USD) 与 `rate_limit_key` 字段。
+    - 4. **分层记忆支持 (Spike-MEMCTX1)**: 采用分层上下文引用结构，优先通过 `policy_context["memory_context"]` 透传。支持 `l0_inline`, `l1_refs`, `l2_query`。
+    - 5. **升格决策门 (Spike-MEMCTX2 硬需求)**: 若内核治理平面需要在不解析 policy 细节的情况下强制执行内存上下文配额 (Quota) 或计费拦截，则必须将其升格为 `ExecuteRequest` 顶层字段。
+- `proposal_v2 (SCHED1/REG1)`:
+    - 1. **Trigger 扩展**: 采用 `policy_context["trigger"]` 承载调度语义（kind: at|cron），实现零顶层变更。
+    - 2. **Registry 扩展**: `ExecuteRequest.skill_ref` 保持原样，Remote Sandbox 应能识别 `registry://<hash>` 并执行内容寻址（Content-Addressed）加载。
+- `acceptance`:
+    - 能够通过 `ExecuteRequest` 发起一个带 `trigger` 的任务，且 `REMOTE_SANDBOX_API.md` 更新相应字段定义。
+    - `policy_context` 能够承载满足 v1 schema 的 `memory_context` 结构。
+- `confidence`: `high`

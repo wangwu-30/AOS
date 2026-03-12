@@ -1,0 +1,6 @@
+{
+  "constraints": {
+    "must_follow_message_contract": true,
+    "output_is_valid_markdown": true
+  }
+}

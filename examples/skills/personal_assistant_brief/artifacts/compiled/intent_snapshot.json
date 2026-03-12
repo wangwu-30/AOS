@@ -1,0 +1,19 @@
+{
+  "constraints": {
+    "max_output_tokens": 512,
+    "model_id": "local_mock",
+    "temperature": 0.2
+  },
+  "contract_sha256": "c4d61b08b3807385f91391ebee8d0e369e1d55f0f597b79e316820987a9336e0",
+  "description": "Generate a concise personal-assistant style response with optional checklist.",
+  "intent": "Generate a concise personal-assistant style response with optional checklist.",
+  "name": "personal_assistant_brief",
+  "schema_version": "1.0.0",
+  "success_criteria": {
+    "constraints": {
+      "max_reply_words": 120,
+      "no_markdown_links": true
+    }
+  },
+  "version": "0.1.1"
+}

@@ -1,0 +1,5 @@
+{
+  "max_output_tokens": 512,
+  "model_id": "local_mock",
+  "temperature": 0.2
+}
