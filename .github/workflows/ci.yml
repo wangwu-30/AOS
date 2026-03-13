@@ -47,6 +47,11 @@ jobs:
           set -euo pipefail
           ruff check src tests
 
+      - name: Secrets Scan (required)
+        env:
+          PYTHONPATH: src
+        run: python -m agentos_next.tools.check_repo_secrets --repo-root .
+
       - name: Run Unit Tests
         env:
           PYTHONPATH: src

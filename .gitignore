@@ -6,6 +6,8 @@ __pycache__/
 .DS_Store
 
 .env
+.env.*
+.envrc
 .venv/
 venv/
 
@@ -22,4 +24,11 @@ data/
 # Credentials/tokens
 *token*.json
 client_secret.json
-
+openai_oauth_token.json
+*.pem
+*.p12
+*.pfx
+*.p8
+*.key
+.netrc
+.npmrc

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
+python3 -m agentos_next.tools.check_repo_secrets --repo-root "$ROOT"

@@ -368,13 +368,6 @@ def cmd_mvp_release_pack(args: argparse.Namespace) -> int:
             "owner": "TBD",
             "due_date_utc": None,
         },
-        {
-            "id": "secrets_scanning",
-            "status": "not_automated",
-            "reason": "MVP: secrets scanning not wired into pipeline yet",
-            "owner": "TBD",
-            "due_date_utc": None,
-        },
     ]
 
     # 1) Admission tests (required gate)
@@ -438,13 +431,6 @@ def cmd_mvp_rc_pack(args: argparse.Namespace) -> int:
             "id": "dependency_vulnerability_scan",
             "status": "not_automated",
             "reason": "MVP: dependency vulnerability scanning not wired into pipeline yet",
-            "owner": "TBD",
-            "due_date_utc": None,
-        },
-        {
-            "id": "secrets_scanning",
-            "status": "not_automated",
-            "reason": "MVP: secrets scanning not wired into pipeline yet",
             "owner": "TBD",
             "due_date_utc": None,
         },
