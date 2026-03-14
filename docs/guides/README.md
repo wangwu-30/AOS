@@ -18,6 +18,10 @@
   - 汇总当前 runtime/context/intent/model routing 的已完成项、差距与下一步。
 - [内核共识待办](/Users/wangwu/codex/agentos-next/docs/guides/KERNEL_CONSENSUS_BACKLOG.md)
   - 作为“已达成但尚未完全落地”的系统共识 SSOT，用于持续推进而不是散落在聊天里。
+- [Kernel MVP_057 实施方案](/Users/wangwu/codex/agentos-next/docs/guides/KERNEL_MVP057_IMPLEMENTATION_PLAN.md)
+  - 面向 ADR-0022 / MVP_057 的分阶段落地方案，回答先做什么、后做什么、阶段门是什么。
+- [Kernel MVP_057 执行跟踪表](/Users/wangwu/codex/agentos-next/docs/guides/KERNEL_MVP057_EXECUTION_TRACKER.md)
+  - 面向后续跟进的状态面，记录工作流状态、目标文件、验收与推荐下一步。
 - [故障复盘模板](/Users/wangwu/codex/agentos-next/docs/guides/INCIDENT_TEMPLATE.md)
   - 面向后续新增故障条目的统一模板，约束症状、根因、证据、修复与防再发信息。
 - [变更记录](/Users/wangwu/codex/agentos-next/CHANGELOG.md)

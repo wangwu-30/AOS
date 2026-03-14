@@ -1,0 +1,254 @@
+实施计划 Review：去掉兼容模式，大刀阔斧重构
+一、核心判断
+你的判断完全正确。当前实施计划有 三处核心的兼容模式思维 需要删除：
+
+位置	原文	问题
+实施方案 L29（目标）	"在不打断现有 runtime 的前提下完成 compatibility bridge，而不是一次性硬切"	这就是兼容模式的总纲，应该反过来
+实施方案 L43（策略#2）	"先做 compatibility bridge，再切 canonical surface"	多此一举，直接写 canonical
+Tracker W1 L40	"其余 OperatorContractV1 字段走 compatibility default"	既然要重构，就直接补齐所有字段
+此外，Spec（MVP_057）本身也有大量兼容措辞（L183 "compatibility bridge 接受"、L595-597 "compatibility bridge 补齐默认值"），但 Spec 的兼容措辞可以保留——那是给未来外部消费者的承诺，不影响你当前内部代码的重构力度。
+
+二、实施计划需要改的 7 个点
+2.1 目标（Goals）L29 — 删除兼容目标
+现在：
+
+在不打断现有 runtime 的前提下完成 compatibility bridge，而不是一次性硬切。
+
+改为：
+
+一次性把 canonical V1 数据结构落地为代码中的唯一路径。旧字段直接替换，不保留 bridge。当前状态已 commit，git 回退即为恢复手段。
+
+2.2 策略（Execution Strategy）L40-44 — 重写三原则
+现在：
+
+1. 先收紧边界，再新增抽象。
+2. 先做 compatibility bridge，再切 canonical surface。
+3. 先用 PA 场景验证，再扩展到更广泛 runtime surface。
+改为：
+
+1. 先 commit 当前状态，再大刀阔斧重构。
+2. 直接定义 canonical V1 dataclass，旧字段一次性替换。
+3. 先用 PA 场景验证，再扩展到更广泛 runtime surface。
+2.3 Phase 1 的 OperatorContractV1 — 不要 "compatibility default"
+现在（L53）：
+
+OperatorContractV1 最小落地：至少补 purity 与 visibility，其余字段走 compatibility default。
+
+改为：
+
+OperatorContractV1 完整落地：为 
+
+_catalog_entries()
+ 中每个 operator 补齐全部 8 个字段（operator_ref / purity / idempotency_class / retry_class / preflight_required / degraded_behavior / resource_cost_vector / visibility）。不保留 dict 散装格式，改为 @dataclass(frozen=True) class OperatorContractV1。
+
+2.4 Phase 2 的 ResourceBudgetV1 — 不做 "并存归一化"
+现在（L74）：
+
+tool_budget / token_budget / stop_policy 到 ResourceBudgetV1 的 admission 归一化。
+
+以及 Tracker W5（L104）：
+
+旧 budget 字段与 ResourceBudgetV1 并存归一化
+
+改为：
+
+删除 
+
+TaskSpec
+ 和 
+
+TaskRecord
+ 中的 tool_budget / token_budget / stop_policy / time_budget_ms 四个老字段，替换为单一 resource_budget: ResourceBudgetV1。同时删除 
+
+execution_lane.py
+ 中的 
+
+TokenBudget
+ / 
+
+StopPolicy
+ 旧类，用 ResourceBudgetV1 取代。
+
+这意味着代码里的变更幅度大致如下：
+
+直接删除的东西：
+
+TaskSpec.tool_budget / 
+
+token_budget
+ / 
+
+stop_policy
+ / time_budget_ms
+TaskRecord.tool_budget / 
+
+token_budget
+ / 
+
+stop_policy
+ / time_budget_ms
+TaskExecutionNode 里对应的 4 个字段
+
+execution_lane.py
+ 中的 class TokenBudget / class StopPolicy
+
+default_token_budget_for_lane()
+ / 
+
+default_stop_policy_for_lane()
+ / 
+
+build_default_token_budget()
+ / 
+
+build_default_stop_policy()
+ / 
+
+clamp_tool_budget_for_lane()
+直接新增的东西：
+
+python
+@dataclass(frozen=True)
+class ResourceBudgetV1:
+    compute_units: int = 24  # 继承 lane 默认
+    time_budget_ms: int = 0
+    context_units: int = 8
+    io_calls_max: int = 4
+    side_effect_calls_max: int = 0
+    delivery_ops_max: int = 1
+python
+def default_resource_budget_for_lane(lane: ExecutionLane) -> ResourceBudgetV1:
+    ...
+2.5 Phase 2 的 TaskContextSnapshotV1 — 不需要 "最小编译与持久化"
+现在（L76）：
+
+TaskContextSnapshotV1 的最小编译与持久化。
+
+改为：
+
+直接定义 TaskContextSnapshotV1 dataclass，在 
+
+context_compiler.py
+ 中实现 compile_snapshot(task_id, generation) -> TaskContextSnapshotV1。snapshot 包含 snapshot_id / task_id / submission_id / generation / frozen_at_generation / selected_context / open_gaps / provenance。
+
+2.6 Phase 1→2 可以合并
+原来分 Phase 1 和 Phase 2 的一个重要原因是"先做 bridge 再切 canonical"。去掉 bridge 策略后，Phase 1（边界收紧）和 Phase 2（预算与上下文）之间的隔层变薄了。建议：
+
+Phase 1（合并后）：定义并落地全部 canonical V1 dataclass + hold delivery gate + information sufficiency 入口
+Phase 2（原 Phase 3）：SemanticSyscallV1 试点
+Phase 3（原 Phase 4）：应用层归位
+2.7 非目标（Non-Goals）L33 — 措辞调整
+现在：
+
+本阶段不重写整个 worker runtime。
+
+这条保留，但需要补一条：
+
+本阶段不要求一次性把所有 operator 都切到 semantic syscall。 （保留）
+
+新增：旧 budget 字段（tool_budget / token_budget / stop_policy）不保留兼容 bridge。重构后若旧 JSON 数据无法反序列化，通过 migration script 或手动清理处理，不做运行时 fallback。
+
+三、Tracker 需要改的 5 个 work item
+W1：OperatorContractV1 — 范围扩大
+输出 改为：定义 @dataclass(frozen=True) class OperatorContractV1，包含 spec 要求的全部 8 个字段；
+
+_catalog_entries()
+ 返回 list[OperatorContractV1] 而非 list[dict]
+验收 改为：
+
+operator_catalog.py
+ 中不再有任何 raw dict entry；类型检查通过
+W5：ResourceBudgetV1 — 从 "bridge" 改为 "替换"
+输出 改为：删除 
+
+TaskSpec
+ / 
+
+TaskRecord
+ / TaskExecutionNode 中的 tool_budget / token_budget / stop_policy / time_budget_ms 四段老字段，统一替换为 resource_budget: ResourceBudgetV1
+验收 改为：grep 整个 kernel/ 目录，不再有 
+
+tool_budget
+ / 
+
+token_budget
+ 字符串出现
+W6：TaskContextSnapshotV1 — 直接定义 dataclass
+输出 改为：定义 @dataclass(frozen=True) class TaskContextSnapshotV1，实现 compile_snapshot()；content_hash 用 sha256(normalized)[:16]
+验收 改为：snapshot 可以被构造、序列化、反序列化；content_hash 可计算
+新增 W0：Commit 当前状态 + 定义 canonical dataclass 文件
+状态：todo
+阶段：Phase 0
+优先级：P0 — 所有其他 work item 的前置
+目标文件：
+
+src/agentos_next/kernel/types.py
+（或新建 src/agentos_next/kernel/canonical_types.py）
+输出：
+git commit 当前全部代码（作为安全回退点）
+在 
+
+types.py
+ 或新文件中一次性定义所有 V1 canonical dataclass：
+ResourceBudgetV1
+ResourceCostVectorV1
+OperatorContractV1
+TaskSpecV1（如果要重命名 
+
+TaskSpec
+）
+TaskContextSnapshotV1
+AssumptionEvidenceV1
+ResourceEscalationRequestV1
+验收：所有 V1 类型都能 from agentos_next.kernel.types import ResourceBudgetV1 成功导入
+新增 W9：旧字段全局替换
+状态：todo
+阶段：Phase 1
+优先级：P0
+目标文件：
+
+task_service.py
+、
+
+task_execution_graph.py
+、
+
+execution_lane.py
+、
+
+worker_react_runtime.py
+、所有 test 文件
+输出：全局搜索替换 
+
+tool_budget
+ / 
+
+token_budget
+ / 
+
+stop_policy
+ → resource_budget；修复所有编译和测试
+验收：grep -r "tool_budget\|token_budget\|stop_policy" src/ 返回空
+四、推荐新的推进顺序
+W0  commit + 定义 canonical V1 dataclass      ← 最先做，5 分钟
+W9  旧字段全局替换为 ResourceBudgetV1          ← 代码量最大但最机械
+W1  OperatorContractV1 完整落地                ← catalog dict → dataclass
+W2  hold delivery gate                         ← 不变
+W3  Information Sufficiency 入口               ← 不变
+W4  ResourceEscalationRequestV1                ← 不变
+W6  TaskContextSnapshotV1                      ← 不变
+W5  删除（已被 W9 吸收）
+W7  SemanticSyscallV1 试点                     ← Phase 2
+W8  应用层归位                                  ← Phase 3
+五、风险评估
+风险	缓解
+替换旧字段后现有 JSON 持久化数据无法读取	W0 先 commit；旧数据如需要可写一次性 migration script
+test 大面积红	预期行为：先 commit，再批量修 test，这是正常重构节奏
+其他消费者（如果有）依赖旧字段	当前没有外部消费者，只有自己的代码；这正是大刀阔斧的最佳时机
+六、结论
+实施计划中所有 "compatibility bridge" / "并存归一化" / "compatibility default" 的措辞都应该删除，替换为 "直接替换"。理由：
+
+Git 就是最好的 compatibility bridge — commit 当前状态，随时可以 revert
+没有外部消费者 — 旧字段只有自己的代码在用
+bridge 代码本身就是技术债 — 写 bridge 的时间不如直接写 canonical
+减少 4 个阶段到 3 个 — Phase 1 和 Phase 2 合并后推进更快

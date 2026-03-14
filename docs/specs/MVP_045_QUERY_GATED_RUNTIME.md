@@ -118,6 +118,9 @@ planner 与 verifier/replanner 的 canonical 输出必须（MUST）为 `WorkerTa
 ## Prompt Surface（MUST）
 
 - `communicator` phase 的 Granted Operators 必须（MUST）只暴露 `builtin://channel.send_message`。
+- `planner` 与 `verifier_replanner` phase 不得（MUST NOT）暴露“可直接执行动作”的 Granted Operators 语义；若需要提示可用工具，必须（MUST）只以 `worker_tasks.allowed_operator_refs` 用途的 canonical operator refs 形式暴露。
+- `planner` 与 `verifier_replanner` phase 的 runtime completion schema 不得（MUST NOT）要求或鼓励顶层 `actions`；它们的 canonical 输出必须（MUST）是 `worker_tasks`。
+- 当 `planner` 或 `verifier_replanner` 同时返回合法 `worker_tasks` 与冗余顶层非消息 `actions` 时，运行时可以（MAY）忽略这些冗余 `actions` 以保留 canonical `worker_tasks`；这些 `actions` 不得（MUST NOT）被直接执行。
 - 模型侧不得（MUST NOT）看到：
   - `builtin://telegram.send_message`
   - `builtin://telegram.send_document`
@@ -267,6 +270,10 @@ planner 与 verifier/replanner 的 canonical 输出必须（MUST）为 `WorkerTa
   - search runtime unavailable
   - ordinary external evidence candidate/source exhausted
   - explicit research blocked or incomplete
+- `E_WORKER_TASK_GRAPH_INVALID` 与 `E_WORKER_SPLIT_REQUIRES_LEADER` 必须（MUST）归类为内部计划/结构错误，而不是基础设施故障：
+  - `reason_class = invalid_internal_plan`
+  - `template_key = blocker.invalid_internal_plan`
+  - communicator 不得（MUST NOT）将其表述为“基础架构故障”或“运行时路径/配置故障”
 - 当普通外部证据预算耗尽时，失败摘要必须（MUST）落到：
   - `reason_class = external_evidence_candidate_exhausted`
   - `template_key = blocker.external_evidence_candidate_exhausted`

@@ -140,6 +140,66 @@ class TestSpikeMEMAPI1BuiltinMemory(unittest.IsolatedAsyncioTestCase):
             search_out_after = _tool_output(evidence, search_res_after)
             self.assertEqual(search_out_after["results"], [])
 
+    async def test_memory_write_semantic_profile_and_preference_inputs_normalize_to_canonical_records(self) -> None:
+        with TemporaryDirectory(prefix="agentos_next_memapi1_semantic_") as td:
+            data_dir = Path(td)
+            orch = Orchestrator.for_data_dir(str(data_dir), local_executor=LocalExecutor.for_data_dir(data_dir))
+            evidence = FileEvidenceStore(data_dir=data_dir)
+
+            profile_res = await orch.execute(
+                _req(
+                    workspace_id="ws_sem",
+                    operator_ref="builtin://memory.write",
+                    arguments={
+                        "record": {
+                            "content": "用户名叫王五",
+                            "kind": "user_preference",
+                            "name": "王五",
+                        }
+                    },
+                    idem="idem_semantic_profile",
+                    span_id="span_semantic_profile",
+                    capability="memory_write",
+                )
+            )
+            self.assertEqual(profile_res.status, "accepted")
+            profile_out = _tool_output(evidence, profile_res)
+            profile_blob = evidence.get_blob(str(profile_out["evidence_ref"]))
+            assert profile_blob is not None
+            profile_obj = json.loads(profile_blob.content.decode("utf-8"))
+            self.assertEqual(profile_obj["kind"], "profile")
+            self.assertEqual(profile_obj["summary"], "用户身份: 王五")
+            self.assertEqual(profile_obj["memory_key"], "profile.identity.name")
+            self.assertEqual(profile_obj["payload"]["subject"], "identity.name")
+            self.assertEqual(profile_obj["payload"]["value"], "王五")
+
+            preference_res = await orch.execute(
+                _req(
+                    workspace_id="ws_sem",
+                    operator_ref="builtin://memory.write",
+                    arguments={
+                        "record": {
+                            "content": "咖啡",
+                            "type": "user_preference",
+                            "metadata": {"field": "preference"},
+                        }
+                    },
+                    idem="idem_semantic_preference",
+                    span_id="span_semantic_preference",
+                    capability="memory_write",
+                )
+            )
+            self.assertEqual(preference_res.status, "accepted")
+            preference_out = _tool_output(evidence, preference_res)
+            preference_blob = evidence.get_blob(str(preference_out["evidence_ref"]))
+            assert preference_blob is not None
+            preference_obj = json.loads(preference_blob.content.decode("utf-8"))
+            self.assertEqual(preference_obj["kind"], "preference")
+            self.assertEqual(preference_obj["summary"], "用户偏好: 咖啡")
+            self.assertEqual(preference_obj["payload"]["subject"], "preference")
+            self.assertEqual(preference_obj["payload"]["value"], "咖啡")
+            self.assertTrue(str(preference_obj["memory_key"]).startswith("pref_"))
+
     async def test_memory_search_reports_conflicts_and_compact_emits_winner(self) -> None:
         with TemporaryDirectory(prefix="agentos_next_memapi1_conflict_") as td:
             data_dir = Path(td)

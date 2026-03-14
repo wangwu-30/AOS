@@ -557,7 +557,12 @@ class AssistantRuntimeDispatcher:
         res: AssistantLoopResult,
         stream_session: Any,
     ) -> OutboxItem:
-        deliveries = tuple(self._deliveries_from_result(res))
+        deliveries_list = self._deliveries_from_result(res)
+        if not deliveries_list:
+            fallback_delivery = self._fallback_delivery_from_result(env=env, res=res)
+            if fallback_delivery is not None:
+                deliveries_list.append(fallback_delivery)
+        deliveries = tuple(deliveries_list)
         reply_text = str(deliveries[-1].get("text") or "").strip() if deliveries else ""
         execute_status = "accepted" if bool(res.ok) else ("hold" if str(res.delivery_state or "").strip() == "hold" else "failed")
         return OutboxItem(
@@ -578,6 +583,41 @@ class AssistantRuntimeDispatcher:
             reply_sent_live=False,
             reply_delivery_mode=None,
         )
+
+    def _fallback_delivery_from_result(
+        self,
+        *,
+        env: dict[str, Any],
+        res: AssistantLoopResult,
+    ) -> Optional[dict[str, Any]]:
+        if str(res.delivery_state or "").strip() != "hold":
+            return None
+        text = self._hold_reply_text(res=res)
+        if not text:
+            return None
+        return {
+            "schema_version": "1.0.0",
+            "ok": True,
+            "operator_ref": "builtin://channel.send_message",
+            "channel": "assistant_runtime",
+            "audience": "user",
+            "text": text,
+            "message_key": str(env.get("event_id") or "").strip() or "runtime_hold",
+            "delivery_stage": "hold",
+            "update_preference": "new_message",
+            "delivery_mode": "create",
+            "metadata": {
+                "source": "pa_runtime.hold_fallback",
+                "error_code": str(res.error_code or "").strip() or None,
+            },
+        }
+
+    @staticmethod
+    def _hold_reply_text(*, res: AssistantLoopResult) -> str:
+        error_code = str(res.error_code or "").strip()
+        if error_code == "E_HITL_REQUIRED":
+            return "这次处理已暂停，需要人工继续处理后才能完成。"
+        return "这次处理已暂停，请稍后再试。"
 
     def _build_internal_error_outbox(
         self,

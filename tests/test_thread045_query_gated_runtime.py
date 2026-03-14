@@ -12,9 +12,11 @@ import bootstrap  # noqa: F401
 
 from agentos_next.apps.assistant_loop import (
     AssistantLoopRequest,
+    _build_terminal_communicator_request,
     _build_pending_contract,
     _is_infra_only_hypothesis_record,
     _map_hypothesis_result,
+    _phase_output_violation,
     run_assistant_loop_async,
 )
 from agentos_next.apps.assistant_runtime import run_assistant_runtime_async
@@ -2092,6 +2094,87 @@ class TestThread045QueryGatedRuntime(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(
             any("verified evidence explicitly says so" in item for item in summary["disallowed_inferences"]),
         )
+
+    def test_build_user_facing_failure_summary_classifies_worker_task_graph_invalid_as_internal_plan(self) -> None:
+        summary = build_user_facing_failure_summary_v1(
+            query_text="告诉我今天北京天气",
+            exec_summaries=[
+                {
+                    "status": "blocked",
+                    "error_code": "E_WORKER_TASK_GRAPH_INVALID",
+                    "source_phase": "planner",
+                }
+            ],
+            step_outputs=[
+                {
+                    "schema_version": "1.0.0",
+                    "status": "blocked",
+                    "error_code": "E_WORKER_TASK_GRAPH_INVALID",
+                    "summary": "planner emitted invalid worker task graph",
+                }
+            ],
+            error_code="E_WORKER_TASK_GRAPH_INVALID",
+            phase_outcome="blocked",
+        )
+
+        assert summary is not None
+        self.assertEqual(summary["reason_class"], "invalid_internal_plan")
+        self.assertEqual(summary["template_key"], "blocker.invalid_internal_plan")
+        self.assertEqual(summary["failure_scope"], "planning")
+        self.assertIn(
+            "The assistant produced an invalid or unfinished internal action plan before completing the request.",
+            summary["allowed_user_visible_facts"],
+        )
+
+    def test_terminal_communicator_request_treats_worker_task_graph_invalid_as_structural(self) -> None:
+        prompt = _build_terminal_communicator_request(
+            terminal_stage="blocker",
+            error_code="E_WORKER_TASK_GRAPH_INVALID",
+            exec_summaries=[
+                {
+                    "source_phase": "planner",
+                    "status": "failed",
+                    "error_code": "E_WORKER_TASK_GRAPH_INVALID",
+                }
+            ],
+            query_text="告诉我今天北京天气",
+        )
+
+        self.assertIn("invalid or unfinished internal action plan", prompt)
+        self.assertNotIn("infrastructure failure", prompt)
+
+    def test_phase_output_violation_tolerates_legacy_action_echo_when_worker_tasks_exist(self) -> None:
+        violation = _phase_output_violation(
+            profile_id="planner",
+            output_obj={
+                "status": "continue",
+                "worker_tasks": [
+                    {
+                        "worker_task_id": "worker_weather",
+                        "objective": "先搜索再浏览北京天气来源",
+                        "depends_on": [],
+                        "allowed_operator_refs": ["builtin://web.search", "builtin://web.browse"],
+                        "scope_summary": "Read-only weather lookup.",
+                        "completion_contract_ref": "worker_contract:weather",
+                        "tool_budget": {
+                            "max_calls": 2,
+                            "max_parallel_calls": 1,
+                            "retry_read_only_tools": True,
+                        },
+                        "time_budget_ms": 8000,
+                    }
+                ],
+                "actions": [
+                    {
+                        "action_id": "legacy_search_echo",
+                        "operator_ref": "builtin://web.search",
+                        "arguments": {"query": "北京 今天天气"},
+                    }
+                ],
+            },
+        )
+
+        self.assertIsNone(violation)
 
     def test_build_user_facing_failure_summary_classifies_candidate_exhaustion(self) -> None:
         summary = build_user_facing_failure_summary_v1(

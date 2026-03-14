@@ -138,6 +138,78 @@ def _strip_nonempty_texts(values: Iterable[Any]) -> tuple[str, ...]:
     return tuple(out)
 
 
+def build_semantic_memory_record_input(
+    *,
+    workspace_id: str,
+    statement: str,
+    conversation_id: str | None = None,
+    project_id: str | None = None,
+    source: str = "user_explicit",
+    tags: Iterable[str] = (),
+    ttl_seconds: int | None = None,
+) -> dict[str, Any]:
+    normalized_statement = " ".join(str(statement or "").split()).strip(" ，,。.!！?？")
+    if not normalized_statement:
+        raise ValueError("statement must be non-empty")
+
+    profile_match = re.search(r"我是(?P<value>[\w\u4e00-\u9fff_-]{1,32})", normalized_statement)
+    preference_match = re.search(r"我(喜欢|偏好|爱)(?P<value>.+)", normalized_statement)
+    workspace_scope = MemoryScopeV2(schema_version=MEMORY_V2_SCHEMA_VERSION, workspace_id=workspace_id).to_json()
+
+    if profile_match is not None:
+        value = str(profile_match.group("value") or "").strip()
+        if value:
+            return {
+                "kind": "profile",
+                "summary": f"用户身份: {value}",
+                "payload": {
+                    "statement": f"我是{value}",
+                    "subject": "identity.name",
+                    "value": value,
+                    "name": value,
+                },
+                "memory_key": "profile.identity.name",
+                "scope": workspace_scope,
+                "source": str(source or "user_explicit").strip() or "user_explicit",
+                "tags": list(_strip_nonempty_texts(("profile", "identity", *list(tags)))),
+                "ttl_seconds": 0 if ttl_seconds is None else int(ttl_seconds or 0),
+            }
+
+    if preference_match is not None:
+        value = str(preference_match.group("value") or "").strip(" ，,。.!！?？")
+        if value:
+            return {
+                "kind": "preference",
+                "summary": f"用户偏好: {value}",
+                "payload": {
+                    "statement": f"我喜欢{value}",
+                    "subject": "preference",
+                    "value": value,
+                },
+                "memory_key": _stable_hash("pref", _normalize_text(value)),
+                "scope": workspace_scope,
+                "source": str(source or "user_explicit").strip() or "user_explicit",
+                "tags": list(_strip_nonempty_texts(("preference", *list(tags)))),
+                "ttl_seconds": 0 if ttl_seconds is None else int(ttl_seconds or 0),
+            }
+
+    return {
+        "kind": "note",
+        "summary": normalized_statement[:160],
+        "payload": {"statement": normalized_statement},
+        "memory_key": _stable_hash("note", _normalize_text(normalized_statement)),
+        "scope": MemoryScopeV2(
+            schema_version=MEMORY_V2_SCHEMA_VERSION,
+            workspace_id=workspace_id,
+            conversation_id=conversation_id,
+            project_id=project_id,
+        ).to_json(),
+        "source": str(source or "user_explicit").strip() or "user_explicit",
+        "tags": list(_strip_nonempty_texts(("note", *list(tags)))),
+        "ttl_seconds": 30 * 24 * 3600 if ttl_seconds is None else int(ttl_seconds or 0),
+    }
+
+
 @dataclass(frozen=True)
 class MemoryScopeV2:
     schema_version: str
@@ -910,46 +982,14 @@ class MemoryConsolidatorV2:
         remembered = remembered.strip(" ，,。.!！?？")
         if not remembered:
             remembered = raw
-        name_match = re.search(r"我是(?P<value>[\w\u4e00-\u9fff_-]{1,32})", remembered)
-        like_match = re.search(r"我(喜欢|偏好|爱)(?P<value>.+)", remembered)
-        if name_match is not None:
-            value = str(name_match.group("value") or "").strip()
-            if value:
-                return {
-                    "kind": "profile",
-                    "summary": f"用户身份: {value}",
-                    "payload": {"statement": f"我是{value}", "name": value},
-                    "memory_key": "profile.identity.name",
-                    "scope": MemoryScopeV2(schema_version=MEMORY_V2_SCHEMA_VERSION, workspace_id=workspace_id),
-                    "source": "user_explicit",
-                    "tags": ("profile", "identity"),
-                    "ttl_seconds": 0,
-                }
-        if like_match is not None:
-            value = str(like_match.group("value") or "").strip(" ，,。.!！?？")
-            if value:
-                return {
-                    "kind": "preference",
-                    "summary": f"用户偏好: {value}",
-                    "payload": {"statement": f"我喜欢{value}", "value": value},
-                    "memory_key": _stable_hash("pref", _normalize_text(value)),
-                    "scope": MemoryScopeV2(schema_version=MEMORY_V2_SCHEMA_VERSION, workspace_id=workspace_id),
-                    "source": "user_explicit",
-                    "tags": ("preference",),
-                    "ttl_seconds": 0,
-                }
-        return {
-            "kind": "note",
-            "summary": remembered[:160],
-            "payload": {"statement": remembered},
-            "memory_key": _stable_hash("note", _normalize_text(remembered)),
-            "scope": MemoryScopeV2(
-                schema_version=MEMORY_V2_SCHEMA_VERSION,
-                workspace_id=workspace_id,
-                conversation_id=conversation_id,
-                project_id=project_id,
-            ),
-            "source": "user_explicit",
-            "tags": ("note",),
-            "ttl_seconds": 30 * 24 * 3600,
-        }
+        record = build_semantic_memory_record_input(
+            workspace_id=workspace_id,
+            conversation_id=conversation_id,
+            project_id=project_id,
+            statement=remembered,
+            source="user_explicit",
+        )
+        scope = record.get("scope")
+        if isinstance(scope, dict):
+            record["scope"] = MemoryScopeV2.from_json(scope, default_workspace_id=workspace_id)
+        return record

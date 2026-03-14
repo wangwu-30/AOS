@@ -57,6 +57,8 @@
 - replay-mode 下必须（MUST）零副作用。
 - scheduler auto tick 失败必须（MUST）返回稳定统计字段。
 - 出站失败时必须（MUST）打印稳定诊断并保留 outbox 事实。
+- 人工介入（Human-in-the-loop, HITL）导致 `delivery_state = hold` 时，PA 必须（MUST）仍然生成至少一条用户可见 delivery；不得（MUST NOT）因为 communicator 被跳过而留下空 `reply_text` 与空 `deliveries`。
+- 当 runtime 返回 `hold` 且未给出显式 `builtin://channel.send_message` 时，Consumer Adapter 必须（MUST）合成一条 Telegram 可发送的保底消息。
 
 ## 错误码（Error Codes）
 
@@ -82,7 +84,8 @@
 2. capability summary 仅反映 `web_search/web_browse/channel_send` 等 canonical capability。
 3. polling happy path 必须完成 `getUpdates -> canonical runtime -> channel delivery -> Telegram reply`。
 4. scheduler auto tick 产出的提醒任务必须使用 `builtin://channel.send_message`。
-5. 非文本更新忽略、webhook 冲突恢复、瞬态网络重试、offset checkpoint 恢复必须通过。
+5. `delivery_state = hold` 且 runtime 无显式 delivery 时，polling 仍必须完成 Telegram reply。
+6. 非文本更新忽略、webhook 冲突恢复、瞬态网络重试、offset checkpoint 恢复必须通过。
 
 发布门（MUST）：
 - `tests.test_thread044_pa_polling` 是统一 runtime 的发布门（release gate）。

@@ -546,6 +546,11 @@ def _phase_output_violation(*, profile_id: str, output_obj: dict[str, Any] | Non
     worker_tasks = _normalize_emitted_worker_tasks(output_obj)
     send_actions = [item for item in actions if _is_send_message_action(item)]
     non_message_actions = [item for item in actions if not _is_send_message_action(item)]
+    if profile_id in {"planner", "verifier_replanner"} and worker_tasks:
+        # Tolerate legacy action echo when the canonical worker task graph is present.
+        # The planner/verifier output still remains worker-task-driven; extra top-level
+        # non-message actions are ignored and never executed from these phases.
+        non_message_actions = []
     if profile_id != "communicator":
         if direct_text:
             return "E_DIRECT_REPLY_FORBIDDEN"
@@ -1402,6 +1407,7 @@ def _is_structural_runtime_error_code(error_code: Optional[str]) -> bool:
         "E_TASK_DEPENDENCY_CYCLE",
         "E_TASK_DEPENDENCY_UNRESOLVED",
         "E_TASK_BATCH_INVALID",
+        "E_WORKER_TASK_GRAPH_INVALID",
         "E_WORKER_SPLIT_REQUIRES_LEADER",
         "E_ACTION_OPERATOR_UNSUPPORTED",
         "E_COMMUNICATOR_ACTION_INVALID",

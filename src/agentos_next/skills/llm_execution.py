@@ -58,11 +58,12 @@ def execute_skill_via_llm(
 
     prompt = build_prompt(pkg=pkg, input_obj=input_obj, policy_context=policy_context)
     input_media = _input_media_from_policy(policy_context)
+    active_profile = _active_prompt_profile(policy_context)
     try:
         raw_out = _call_complete_json_compat(
             backend=backend,
             prompt=prompt,
-            json_schema=_runtime_completion_schema(),
+            json_schema=_runtime_completion_schema(active_profile=active_profile),
             safety=safety,
             model_id=model_id,
             stream_callback=stream_callback,
@@ -78,6 +79,7 @@ def execute_skill_via_llm(
         outputs_schema=pkg.artifacts.outputs_schema,
         input_obj=input_obj,
         prompt=prompt,
+        active_profile=active_profile,
     )
     try:
         validate_instance(out, pkg.artifacts.outputs_schema, path="$.output")
@@ -145,15 +147,18 @@ def _resolve_model_id(
 
 def build_prompt(*, pkg: SkillPackage, input_obj: Mapping[str, Any], policy_context: Optional[dict[str, Any]] = None) -> str:
     inp = json.dumps(dict(input_obj), ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-    out_contract = _render_output_contract(dict(pkg.artifacts.outputs_schema))
+    active_profile = _active_prompt_profile(policy_context)
+    out_contract = _render_output_contract(
+        _phase_scoped_prompt_outputs_schema(dict(pkg.artifacts.outputs_schema), active_profile=active_profile)
+    )
     reasoning_prompt = _reasoning_prompt_from_policy(policy_context)
     execution_prefix = _execution_prefix_from_policy(policy_context) if not reasoning_prompt else ""
     communication_prefix = _communication_prefix_from_policy(policy_context) if not reasoning_prompt else ""
     response_language = _response_language_from_policy(policy_context)
     runtime_actions = _runtime_actions_from_policy(policy_context)
+    worker_task_operator_refs = _worker_task_operator_refs_from_policy(policy_context)
     observation_capsule = _observation_capsule_from_policy(policy_context)
     verified_failure_summary = _verified_failure_summary_from_policy(policy_context)
-    active_profile = str((policy_context or {}).get("active_prompt_profile") or "").strip() if isinstance(policy_context, dict) else ""
     memory_pack = _memory_pack_from_policy(
         policy_context,
         execution_prefix=execution_prefix,
@@ -173,8 +178,21 @@ def build_prompt(*, pkg: SkillPackage, input_obj: Mapping[str, Any], policy_cont
         "A browse snapshot that only shows page navigation, headers, footers, or other page chrome is not sufficient evidence for a factual answer.",
         "When runtime time facts are present, interpret relative dates like today/tomorrow/yesterday against that anchor instead of asking the user to restate the date.",
     ]
+    if active_profile in {"planner", "verifier_replanner"}:
+        parts.append(
+            "Planner/verifier MUST use canonical operator refs only inside worker_tasks.allowed_operator_refs and MUST NOT emit top-level actions."
+        )
 
-    if runtime_actions:
+    if worker_task_operator_refs:
+        parts.extend(
+            [
+                "",
+                "Worker Task Operator Refs:",
+                "Use only these canonical operator refs inside worker_tasks.allowed_operator_refs for this turn.",
+                *worker_task_operator_refs,
+            ]
+        )
+    elif runtime_actions:
         parts.extend(
             [
                 "",
@@ -559,43 +577,58 @@ def _observation_capsule_from_policy(policy_context: Optional[dict[str, Any]]) -
     return str(policy_context.get("execution_observation_capsule") or "").strip()
 
 
-def _runtime_completion_schema() -> dict[str, Any]:
+def _active_prompt_profile(policy_context: Optional[dict[str, Any]]) -> str:
+    if not isinstance(policy_context, dict):
+        return ""
+    return str(policy_context.get("active_prompt_profile") or "").strip()
+
+
+def _phase_scoped_prompt_outputs_schema(outputs_schema: Mapping[str, Any], *, active_profile: str) -> dict[str, Any]:
+    scoped = dict(outputs_schema or {})
+    props = scoped.get("properties")
+    if not isinstance(props, Mapping):
+        return scoped
+    filtered = dict(props)
+    if active_profile in {"intent_router", "planner", "verifier_replanner", "executor"}:
+        filtered.pop("reply", None)
+    if active_profile in {"intent_router", "planner", "verifier_replanner"}:
+        filtered.pop("actions", None)
+    if active_profile in {"intent_router", "executor", "communicator"}:
+        filtered.pop("worker_tasks", None)
+    scoped["properties"] = filtered
+    required = scoped.get("required")
+    if isinstance(required, list):
+        scoped["required"] = [str(item).strip() for item in required if str(item).strip() in filtered]
+    return scoped
+
+
+def _runtime_completion_schema(*, active_profile: str = "") -> dict[str, Any]:
+    properties: dict[str, Any] = {
+        "output": {"type": "object"},
+        "status": {"type": "string"},
+        "reasoning": {"type": "string"},
+    }
+    if active_profile in {"", "communicator"}:
+        properties["reply"] = {"type": "string"}
+    if active_profile in {"", "planner", "verifier_replanner"}:
+        properties["worker_tasks"] = {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": True,
+            },
+        }
+    if active_profile in {"", "executor", "communicator"}:
+        properties["actions"] = {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": True,
+            },
+        }
     return {
         "type": "object",
-        "properties": {
-            "output": {"type": "object"},
-            "status": {"type": "string"},
-            "reply": {"type": "string"},
-            "reasoning": {"type": "string"},
-            "worker_tasks": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "worker_task_id": {"type": "string"},
-                        "objective": {"type": "string"},
-                        "depends_on": {"type": "array", "items": {"type": "string"}},
-                        "allowed_operator_refs": {"type": "array", "items": {"type": "string"}},
-                        "scope_summary": {"type": "string"},
-                        "completion_contract_ref": {"type": "string"},
-                        "tool_budget": {"type": "object"},
-                        "time_budget_ms": {"type": "integer"},
-                    },
-                    "additionalProperties": True,
-                },
-            },
-            "actions": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "operator_ref": {"type": "string"},
-                        "arguments": {"type": "object"},
-                    },
-                    "additionalProperties": True,
-                },
-            },
-        },
+        "properties": properties,
         "additionalProperties": True,
     }
 
@@ -606,17 +639,20 @@ def _normalize_runtime_completion_output(
     outputs_schema: Mapping[str, Any],
     input_obj: Mapping[str, Any],
     prompt: str,
+    active_profile: str = "",
 ) -> dict[str, Any]:
     runtime_output = _normalize_runtime_completion_candidate(
         raw_out=raw_out,
         input_obj=input_obj,
         prompt=prompt,
+        active_profile=active_profile,
     )
     return _project_runtime_output_to_validation_schema(
         runtime_output=runtime_output,
         outputs_schema=outputs_schema,
         input_obj=input_obj,
         prompt=prompt,
+        active_profile=active_profile,
     )
 
 
@@ -680,12 +716,12 @@ def _default_mock_actions_for_profile(prompt: str, profile_id: str) -> list[dict
     ):
         return [
             {
-                "task_id": "inspect_workspace",
+                "action_id": "inspect_workspace",
                 "operator_ref": "builtin://fs.list",
                 "arguments": {"path": "."},
             },
             {
-                "task_id": "discover_key_files",
+                "action_id": "discover_key_files",
                 "operator_ref": "builtin://shell.exec",
                 "arguments": {
                     "command": "find . -maxdepth 2 \\( -name README.md -o -name README -o -name pyproject.toml -o -name package.json -o -name Makefile \\) | sort",
@@ -726,9 +762,14 @@ def _default_mock_worker_tasks_for_profile(prompt: str, profile_id: str) -> list
     return []
 
 
-def _synthesized_runtime_completion_output(*, input_obj: Mapping[str, Any], prompt: str) -> dict[str, Any]:
+def _synthesized_runtime_completion_output(
+    *,
+    input_obj: Mapping[str, Any],
+    prompt: str,
+    active_profile: str = "",
+) -> dict[str, Any]:
     out: dict[str, Any] = {}
-    profile_id = _extract_prompt_profile(prompt)
+    profile_id = str(active_profile or _extract_prompt_profile(prompt)).strip()
     if profile_id:
         out["status"] = "done"
     if profile_id == "communicator":
@@ -748,13 +789,23 @@ def _synthesized_runtime_completion_output(*, input_obj: Mapping[str, Any], prom
     return out
 
 
-def _synthesized_skill_output(*, outputs_schema: Mapping[str, Any], input_obj: Mapping[str, Any], prompt: str) -> dict[str, Any]:
+def _synthesized_skill_output(
+    *,
+    outputs_schema: Mapping[str, Any],
+    input_obj: Mapping[str, Any],
+    prompt: str,
+    active_profile: str = "",
+) -> dict[str, Any]:
     try:
         base = synthesize_instance(outputs_schema)
     except Exception:
         base = {}
     out = dict(base) if isinstance(base, dict) else {}
-    runtime_defaults = _synthesized_runtime_completion_output(input_obj=input_obj, prompt=prompt)
+    runtime_defaults = _synthesized_runtime_completion_output(
+        input_obj=input_obj,
+        prompt=prompt,
+        active_profile=active_profile,
+    )
     for key, value in runtime_defaults.items():
         if key == "reply":
             current = out.get("reply")
@@ -781,30 +832,71 @@ def _normalize_runtime_completion_candidate(
     raw_out: Mapping[str, Any],
     input_obj: Mapping[str, Any],
     prompt: str,
+    active_profile: str = "",
 ) -> dict[str, Any]:
-    runtime_output = _synthesized_runtime_completion_output(input_obj=input_obj, prompt=prompt)
+    runtime_output = _synthesized_runtime_completion_output(
+        input_obj=input_obj,
+        prompt=prompt,
+        active_profile=active_profile,
+    )
     if not isinstance(raw_out, Mapping):
         return runtime_output
 
-    profile_id = _extract_prompt_profile(prompt)
+    profile_id = str(active_profile or _extract_prompt_profile(prompt)).strip()
     explicit_output = raw_out.get("output")
-    if isinstance(explicit_output, Mapping):
-        runtime_output.update(dict(explicit_output))
+    runtime_payload: dict[str, Any] = dict(explicit_output) if isinstance(explicit_output, Mapping) else {}
 
     for field in ("status", "reply", "reasoning"):
-        value = raw_out.get(field)
+        value = raw_out.get(field) if field in raw_out else runtime_payload.get(field)
         if not isinstance(value, str):
             continue
         if field == "reply" and profile_id not in {"", "communicator"}:
             continue
         runtime_output[field] = value
 
-    raw_actions = raw_out.get("actions")
-    if isinstance(raw_actions, list):
-        runtime_output["actions"] = _normalize_actions_for_output_schema(raw_actions, outputs_schema={})
-    raw_worker_tasks = raw_out.get("worker_tasks")
-    if isinstance(raw_worker_tasks, list):
-        runtime_output["worker_tasks"] = _normalize_worker_tasks_for_output_schema(raw_worker_tasks)
+    if "actions" in raw_out:
+        runtime_payload["actions"] = raw_out.get("actions")
+    if "worker_tasks" in raw_out:
+        runtime_payload["worker_tasks"] = raw_out.get("worker_tasks")
+    actions_field_present = "actions" in runtime_payload
+    worker_tasks_field_present = "worker_tasks" in runtime_payload
+
+    normalized_actions = (
+        _normalize_actions_for_output_schema(runtime_payload.get("actions"), outputs_schema={})
+        if actions_field_present and isinstance(runtime_payload.get("actions"), list)
+        else []
+    )
+    normalized_worker_tasks = (
+        _normalize_worker_tasks_for_output_schema(runtime_payload.get("worker_tasks"))
+        if worker_tasks_field_present and isinstance(runtime_payload.get("worker_tasks"), list)
+        else []
+    )
+    if profile_id == "intent_router":
+        # Binder phases should not execute or emit plans; keep only phase verdict/state.
+        normalized_actions = []
+        normalized_worker_tasks = []
+        actions_field_present = False
+        worker_tasks_field_present = False
+    elif profile_id in {"planner", "verifier_replanner"}:
+        has_send_message = any(
+            str(item.get("operator_ref") or "").strip() == "builtin://channel.send_message"
+            for item in normalized_actions
+            if isinstance(item, Mapping)
+        )
+        if not normalized_worker_tasks and normalized_actions and not has_send_message:
+            normalized_worker_tasks = _legacy_worker_tasks_from_actions(normalized_actions)
+            normalized_actions = []
+            actions_field_present = False
+            worker_tasks_field_present = True
+
+    if actions_field_present:
+        runtime_output["actions"] = normalized_actions
+    elif normalized_actions:
+        runtime_output["actions"] = normalized_actions
+    if worker_tasks_field_present:
+        runtime_output["worker_tasks"] = normalized_worker_tasks
+    elif normalized_worker_tasks:
+        runtime_output["worker_tasks"] = normalized_worker_tasks
 
     if not any(k in raw_out for k in ("output", "status", "reply", "reasoning", "actions", "worker_tasks")):
         runtime_output.update(dict(raw_out))
@@ -814,20 +906,65 @@ def _normalize_runtime_completion_candidate(
     return runtime_output
 
 
+def _legacy_worker_tasks_from_actions(actions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized_actions = [dict(item) for item in actions if isinstance(item, Mapping)]
+    worker_ids = {
+        str(item.get("action_id") or "").strip(): (
+            str(item.get("worker_task_id") or "").strip()
+            or f"worker_{str(item.get('action_id') or '').strip() or index}"
+        )
+        for index, item in enumerate(normalized_actions, start=1)
+    }
+    worker_tasks: list[dict[str, Any]] = []
+    for index, item in enumerate(normalized_actions, start=1):
+        action_id = str(item.get("action_id") or "").strip()
+        operator_ref = str(item.get("operator_ref") or "").strip()
+        worker_task_id = worker_ids.get(action_id) or f"worker_{action_id or index}"
+        depends_on = [
+            worker_ids.get(str(dep).strip(), f"worker_{str(dep).strip()}")
+            for dep in (item.get("depends_on") or [])
+            if str(dep).strip()
+        ]
+        tool_budget_raw = item.get("tool_budget") if isinstance(item.get("tool_budget"), Mapping) else {}
+        worker_tasks.append(
+            {
+                "worker_task_id": worker_task_id,
+                "objective": str(item.get("objective") or f"execute {operator_ref}").strip() or f"execute {operator_ref}",
+                "depends_on": depends_on,
+                "allowed_operator_refs": [operator_ref] if operator_ref else [],
+                "scope_summary": str(item.get("scope_summary") or f"Approved tool scope for {operator_ref}").strip(),
+                "completion_contract_ref": str(item.get("completion_contract_ref") or "worker_result:v1").strip(),
+                "tool_budget": {
+                    "max_calls": max(1, int((tool_budget_raw or {}).get("max_calls") or 1)),
+                    "max_parallel_calls": max(1, int((tool_budget_raw or {}).get("max_parallel_calls") or 1)),
+                    "retry_read_only_tools": bool((tool_budget_raw or {}).get("retry_read_only_tools")),
+                },
+                "time_budget_ms": max(0, int(item.get("time_budget_ms") or 0)),
+            }
+        )
+    return worker_tasks
+
+
 def _project_runtime_output_to_validation_schema(
     *,
     runtime_output: Mapping[str, Any],
     outputs_schema: Mapping[str, Any],
     input_obj: Mapping[str, Any],
     prompt: str,
+    active_profile: str = "",
 ) -> dict[str, Any]:
-    synthesized = _synthesized_skill_output(outputs_schema=outputs_schema, input_obj=input_obj, prompt=prompt)
+    synthesized = _synthesized_skill_output(
+        outputs_schema=outputs_schema,
+        input_obj=input_obj,
+        prompt=prompt,
+        active_profile=active_profile,
+    )
     projected = dict(synthesized)
     for key, value in dict(runtime_output or {}).items():
         if not _schema_accepts_field(outputs_schema, key):
             continue
         projected[key] = value
-    profile_id = _extract_prompt_profile(prompt)
+    profile_id = str(active_profile or _extract_prompt_profile(prompt)).strip()
     if profile_id not in {"", "communicator"}:
         projected.pop("reply", None)
     return projected
@@ -893,7 +1030,7 @@ def _normalize_worker_tasks_for_output_schema(tasks: list[Any]) -> list[dict[str
         seen_ids.add(worker_task_id)
         depends_on_raw = item.get("depends_on") or []
         allowed_raw = item.get("allowed_operator_refs") or []
-        tool_budget_raw = item.get("tool_budget") or {}
+        tool_budget_raw = item.get("tool_budget") if isinstance(item.get("tool_budget"), Mapping) else {}
         task_obj = {
             "worker_task_id": worker_task_id,
             "objective": str(item.get("objective") or "").strip(),
@@ -992,7 +1129,7 @@ def _runtime_actions_from_policy(policy_context: Optional[dict[str, Any]]) -> li
     if active_profile == "communicator":
         return ["- builtin://channel.send_message(text, audience?, metadata?, message_key?, delivery_stage?, update_preference?)"]
 
-    if active_profile in {"intent_router", "verifier_replanner"}:
+    if active_profile in {"intent_router", "planner", "verifier_replanner"}:
         return []
 
     lines: list[str] = []
@@ -1024,6 +1161,44 @@ def _runtime_actions_from_policy(policy_context: Optional[dict[str, Any]]) -> li
         lines.extend(["- builtin://scheduler.at(...)", "- builtin://scheduler.cron(...)"])
     if "fs_read" in parsed.names:
         lines.append("- builtin://creator.plan(intent, registry_root?, max_steps?)")
+    return lines
+
+
+def _worker_task_operator_refs_from_policy(policy_context: Optional[dict[str, Any]]) -> list[str]:
+    if not isinstance(policy_context, dict):
+        return []
+    parsed = parse_capabilities(policy_context)
+    if not parsed.ok:
+        return []
+    active_profile = _active_prompt_profile(policy_context)
+    if active_profile not in {"planner", "verifier_replanner"}:
+        return []
+
+    lines: list[str] = []
+    if "fs_read" in parsed.names:
+        lines.extend(["- builtin://fs.read", "- builtin://fs.list"])
+    if "fs_write" in parsed.names:
+        lines.append("- builtin://fs.write")
+    if "shell_exec" in parsed.names:
+        lines.append("- builtin://shell.exec")
+    if "memory_write" in parsed.names:
+        lines.append("- builtin://memory.write")
+    if "memory_search" in parsed.names:
+        lines.append("- builtin://memory.search")
+    if "memory_compact" in parsed.names:
+        lines.append("- builtin://memory.compact")
+    if "memory_delete" in parsed.names:
+        lines.append("- builtin://memory.delete")
+    if "time_read" in parsed.names:
+        lines.append("- builtin://time.now")
+    if "web_search" in parsed.names:
+        lines.append("- builtin://web.search")
+    if "web_browse" in parsed.names:
+        lines.append("- builtin://web.browse")
+    if "research_run" in parsed.names:
+        lines.append("- builtin://research.run")
+    if "scheduler_write" in parsed.names:
+        lines.extend(["- builtin://scheduler.at", "- builtin://scheduler.cron"])
     return lines
 
 

@@ -223,6 +223,25 @@ kind 约束：
 - `memory_key` 缺失时必须（MUST）由 `workspace_id + content` 稳定派生，保证同输入 deterministic。
 - 兼容输入的输出仍必须（MUST）保持本规范定义的 V2 输出形状。
 
+### memory.write 语义适配（Semantic Adapter）
+
+规则：
+- 当 `record` 不是 canonical V2 record，但表达的是高层记忆意图时，运行时必须（MUST）先做语义适配，再进入 V2 `record` 校验。
+- 语义适配输入可以（MAY）包含 `type`、legacy `kind`、`name`、`value`、`metadata.field`、`content/text/statement` 等字段；运行时不得（MUST NOT）把这些 legacy alias 直接透传给 V2 validator。
+- 身份类输入必须（MUST）被归一化为：
+  - `kind = "profile"`
+  - `memory_key = "profile.identity.name"`
+  - `payload.subject = "identity.name"`
+  - `payload.value = <姓名>`
+- 偏好类输入必须（MUST）被归一化为：
+  - `kind = "preference"`
+  - `payload.subject = "preference"`
+  - `payload.value = <偏好值>`
+- `type=user_profile`、`kind=user_profile`、`metadata.field in {"name","username"}` 等 identity alias 必须（MUST）视为身份类输入。
+- `type=user_preference`、`kind=user_preference`、`metadata.field in {"preference","favorite","like"}` 等 preference alias 必须（MUST）视为偏好类输入。
+- 语义适配后的 `source/tags/ttl_seconds` 应该（SHOULD）尽量保留调用方提供的信息；缺失时必须（MUST）回落到本规范默认值。
+- 语义适配后仍无法形成 canonical V2 `record` 时，运行时必须（MUST）返回 `E_INPUT_SCHEMA`。
+
 ### memory.search
 
 输入：

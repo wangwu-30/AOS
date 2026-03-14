@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -16,6 +17,7 @@ from agentos_next.kernel.memory_store import (
     MemoryRetrieverV2,
     MemoryScopeV2,
     MemoryStoreV2,
+    build_semantic_memory_record_input,
 )
 from agentos_next.kernel.trace_logger import FileTraceLogger
 from agentos_next.kernel.types import EvidenceRef, TraceEvent
@@ -23,6 +25,8 @@ from agentos_next.kernel.types import EvidenceRef, TraceEvent
 LEGACY_MEMORY_SOURCE_MAP = {
     "legacy_import": "system_consolidated",
 }
+PROFILE_FIELD_HINTS = {"name", "username", "display_name", "nickname", "real_name", "full_name"}
+PREFERENCE_FIELD_HINTS = {"preference", "favorite", "favourite", "like", "likes"}
 
 
 @dataclass(frozen=True)
@@ -90,10 +94,194 @@ def _normalize_memory_source(source: Optional[str]) -> str:
     return LEGACY_MEMORY_SOURCE_MAP.get(raw, raw)
 
 
+def _extract_profile_value(raw: Any) -> Optional[str]:
+    text = _opt_str(raw)
+    if not text:
+        return None
+    candidate = " ".join(text.split()).strip(" ，,。.!！?？")
+    if not candidate:
+        return None
+    match = re.search(
+        r"(?:我是|我叫|名字是|名字叫|姓名是|姓名叫|用户名是|用户名叫|昵称是|昵称叫)\s*(?P<value>[\w\u4e00-\u9fff_-]{1,32})",
+        candidate,
+    )
+    if match is not None:
+        value = _opt_str(match.group("value"))
+        if value:
+            return value
+    if re.fullmatch(r"[\w\u4e00-\u9fff_-]{1,32}", candidate):
+        return candidate
+    return None
+
+
+def _extract_preference_value(raw: Any) -> Optional[str]:
+    text = _opt_str(raw)
+    if not text:
+        return None
+    candidate = " ".join(text.split()).strip(" ，,。.!！?？")
+    if not candidate:
+        return None
+    match = re.search(r"(?:我)?(喜欢|偏好|爱)\s*(?P<value>.+)", candidate)
+    if match is not None:
+        value = _opt_str(match.group("value"))
+        if value:
+            return value.strip(" ：:")
+    if len(candidate) <= 80:
+        return candidate
+    return None
+
+
+def _semantic_memory_record_from_input(
+    *,
+    record_input: dict[str, Any],
+    req: ExecuteRequest,
+) -> Optional[dict[str, Any]]:
+    raw_kind = str(record_input.get("kind") or "").strip().lower()
+    raw_type = str(record_input.get("type") or "").strip().lower()
+    payload = record_input.get("payload") if isinstance(record_input.get("payload"), dict) else {}
+    metadata = record_input.get("metadata") if isinstance(record_input.get("metadata"), dict) else {}
+    scope = record_input.get("scope") if isinstance(record_input.get("scope"), dict) else {}
+    extra_tags = list(record_input.get("tags") or []) if isinstance(record_input.get("tags"), list) else []
+    source = _normalize_memory_source(_opt_str(record_input.get("source")))
+    ttl_seconds = _opt_int(record_input.get("ttl_seconds"), default=0)
+    conversation_id = _opt_str(scope.get("conversation_id"))
+    project_id = _opt_str(scope.get("project_id"))
+    metadata_field = str(
+        metadata.get("field") or metadata.get("key") or record_input.get("field") or ""
+    ).strip().lower()
+
+    canonical_kind_ready = (
+        raw_kind in MEMORY_RECORD_KIND_SET
+        and not raw_type
+        and str(record_input.get("summary") or "").strip()
+        and str(record_input.get("memory_key") or "").strip()
+        and isinstance(record_input.get("payload"), dict)
+    )
+    if canonical_kind_ready:
+        return None
+
+    profile_seed = (
+        _opt_str(record_input.get("name"))
+        or _opt_str(payload.get("name"))
+        or (
+            _extract_profile_value(
+                record_input.get("content")
+                or record_input.get("text")
+                or record_input.get("statement")
+                or record_input.get("summary")
+            )
+            if metadata_field in PROFILE_FIELD_HINTS
+            else None
+        )
+    )
+    if profile_seed:
+        return build_semantic_memory_record_input(
+            workspace_id=str(req.workspace_id),
+            conversation_id=conversation_id,
+            project_id=project_id,
+            statement=f"我是{profile_seed}",
+            source=source,
+            tags=extra_tags,
+            ttl_seconds=ttl_seconds,
+        )
+
+    profile_hint_blob = " ".join(
+        item
+        for item in (
+            raw_kind,
+            raw_type,
+            metadata_field,
+            _opt_str(record_input.get("content")),
+            _opt_str(record_input.get("text")),
+            _opt_str(record_input.get("statement")),
+            _opt_str(record_input.get("summary")),
+        )
+        if item
+    ).lower()
+    if any(token in profile_hint_blob for token in ("profile", "identity", "用户名", "姓名", "名字", "昵称")):
+        value = _extract_profile_value(
+            record_input.get("content")
+            or record_input.get("text")
+            or record_input.get("statement")
+            or record_input.get("summary")
+        )
+        if value:
+            return build_semantic_memory_record_input(
+                workspace_id=str(req.workspace_id),
+                conversation_id=conversation_id,
+                project_id=project_id,
+                statement=f"我是{value}",
+                source=source,
+                tags=extra_tags,
+                ttl_seconds=ttl_seconds,
+            )
+
+    preference_seed = (
+        _opt_str(record_input.get("value"))
+        or _opt_str(payload.get("value"))
+        or (
+            _extract_preference_value(
+                record_input.get("content")
+                or record_input.get("text")
+                or record_input.get("statement")
+                or record_input.get("summary")
+            )
+            if metadata_field in PREFERENCE_FIELD_HINTS
+            else None
+        )
+    )
+    if preference_seed:
+        return build_semantic_memory_record_input(
+            workspace_id=str(req.workspace_id),
+            conversation_id=conversation_id,
+            project_id=project_id,
+            statement=f"我喜欢{preference_seed}",
+            source=source,
+            tags=extra_tags,
+            ttl_seconds=ttl_seconds,
+        )
+
+    preference_hint_blob = " ".join(
+        item
+        for item in (
+            raw_kind,
+            raw_type,
+            metadata_field,
+            _opt_str(record_input.get("content")),
+            _opt_str(record_input.get("text")),
+            _opt_str(record_input.get("statement")),
+            _opt_str(record_input.get("summary")),
+        )
+        if item
+    ).lower()
+    if any(token in preference_hint_blob for token in ("preference", "favorite", "favourite", "喜欢", "偏好")):
+        value = _extract_preference_value(
+            record_input.get("content")
+            or record_input.get("text")
+            or record_input.get("statement")
+            or record_input.get("summary")
+        )
+        if value:
+            return build_semantic_memory_record_input(
+                workspace_id=str(req.workspace_id),
+                conversation_id=conversation_id,
+                project_id=project_id,
+                statement=f"我喜欢{value}",
+                source=source,
+                tags=extra_tags,
+                ttl_seconds=ttl_seconds,
+            )
+
+    return None
+
+
 def _coerce_memory_write_record_input(*, req: ExecuteRequest) -> dict[str, Any]:
     arguments = _require_dict(req.arguments, name="arguments")
     record_input = arguments.get("record")
     if isinstance(record_input, dict):
+        semantic = _semantic_memory_record_from_input(record_input=record_input, req=req)
+        if semantic is not None:
+            return semantic
         normalized = dict(record_input)
         if not isinstance(normalized.get("scope"), dict):
             normalized["scope"] = {"workspace_id": str(req.workspace_id)}

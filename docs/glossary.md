@@ -66,10 +66,25 @@
 - 研究证据包（Research Evidence Pack）：由 research doctrine 从搜索、浏览与比较轨迹中整理出的结构化证据对象，用于 verifier 与 communicator 消费。
 - 自对抗模式（Self-Adversarial Mode）：在复杂、高风险或高歧义任务中启用的 `hypothesis -> challenge -> revision` 内部教义包。
 - 观察学习候选（Observation Learning Candidate）：从成功/失败/research 轨迹提炼出的 SOP、anti-pattern 或 strategy 候选；首版只允许人工晋升。
+- 控制面（Control Plane）：负责准入、任务图变更、资源裁决、暂停恢复与最终交付裁决的内核管理面。
+- 执行面（Execution Plane）：负责在既定 task、预算与边界内运行 worker、syscall 与外部 loop 的内核执行面。
+- 应用层（Application Layer）：位于 Kernel 之上的产品语义层，负责 persona、领域对象模型、doctrine、默认假设与用户可见交互策略。
+- 工作计划（Program / Workstream）：应用层用于聚合多个相关 task 的高层业务对象，不是 Kernel primitive。
+- 任务（Task）：围绕单个可验收目标聚合预算、状态迁移与交付合同的顶层 durable 调度单位。
+- 推理动作（Reasoning Action）：task 内部的局部控制流单元，可以表现为 thought/tool selection/tool call observation，但默认不是顶层内核调度单位。
+- 任务级上下文快照（Task-Scoped Context Snapshot）：围绕单个 task 和 generation 裁剪、冻结并带 provenance 的最小充分上下文包，不等于系统全部已知上下文。
+- 假设证据（Assumption Evidence）：在信息不完备但允许带显式假设继续时写入 evidence 的结构化记录，至少说明假设文本、置信度与失败回退策略。
+- 资源升级请求（Resource Escalation Request）：worker 在执行中发现未声明共享写资源、scope 扩张或 task graph 重排需求时，提交给 Leader 的结构化升级请求。
 - 连续性记忆（Continuity Memory）：围绕 `(workspace_id, conversation_id)` 维护的当前会话状态头与事件日志，属于记忆系统 V2 的 `L0`。
 - 记忆记录 V2（Memory Record V2）：记忆系统 V2 中唯一允许持久化的结构化记忆记录，包含 `kind / summary / payload / memory_key / scope / source` 等字段。
 - 记忆上下文 V2（Memory Context V2）：通过 `policy_context["memory_context"]` 注入执行面的唯一记忆上下文结构，字段固定为 `l0_continuity / l1_query / l2_hits / conflicts / retrieval_ref`。
 - 迁移兼容桥（Migration Compatibility Bridge）：在 canonical public contract 已升级后，运行时为旧输入、旧索引或旧测试提供的受限归一化层；所有对外可观察结果仍以新 contract 为准。
+- 语义适配（Semantic Adapter）：把高层意图输入映射为 canonical 结构化 contract 的运行时归一化层。
+- 系统服务（System Service）：位于内核之上的稳定服务层，封装 memory、web、channel、scheduler 等领域能力。
+- 语义系统调用（Semantic Syscall）：面向推理层暴露的稳定高层服务调用，屏蔽 driver payload 细节。
+- 操作器合同（Operator Contract）：每个 operator 必须声明的 purity、idempotency、retry、preflight、degraded semantics 与资源成本描述。
+- 资源成本向量（Resource Cost Vector）：统一描述 `compute / time / context / io / side_effect / delivery` 六类成本的结构化向量。
+- 等价变换公理（Equivalence Transformation Axiom）：在验收合同不变前提下允许把目标改写为等价目标的 doctrine 级推理规则。
 
 ## 历史术语
 

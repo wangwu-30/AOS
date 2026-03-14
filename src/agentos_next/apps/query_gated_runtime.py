@@ -2145,6 +2145,19 @@ def _append_fact_if(target: list[str], *, prefix: str, value: Any) -> None:
         _append_unique_fact(target, f"{prefix}{text}.")
 
 
+def _is_invalid_internal_plan_error_code(error_code: str | None) -> bool:
+    return str(error_code or "").strip() in {
+        "E_TASK_DEPENDENCY_CYCLE",
+        "E_TASK_DEPENDENCY_UNRESOLVED",
+        "E_TASK_BATCH_INVALID",
+        "E_WORKER_TASK_GRAPH_INVALID",
+        "E_WORKER_SPLIT_REQUIRES_LEADER",
+        "E_ACTION_OPERATOR_UNSUPPORTED",
+        "E_COMMUNICATOR_ACTION_INVALID",
+        "E_MESSAGE_TASK_PHASE_VIOLATION",
+    }
+
+
 def _build_external_evidence_candidate_exhausted_summary(
     *,
     failed_phase: str,
@@ -2408,7 +2421,21 @@ def build_user_facing_failure_summary_v1(
     if effective_phase_outcome == "blocked":
         detail_text = _normalized_failure_detail(failed_output.get("reason") or failed_output.get("summary") or failed_output.get("message"))
         reason_hint = None
-        if bool(task_requirements.get("attachment_evidence_required")) and not bool(task_requirements.get("multimodal_chain_supported")):
+        if _is_invalid_internal_plan_error_code(stable_error_code):
+            reason_class = "invalid_internal_plan"
+            template_key = "blocker.invalid_internal_plan"
+            failure_scope = "planning"
+            retryable = True
+            user_actionability = "retry_after_runtime_repair"
+            next_step_hint = "Explain that the assistant produced an invalid or unfinished internal action plan before it could complete the request."
+            allowed_user_visible_facts.extend(
+                [
+                    "The assistant produced an invalid or unfinished internal action plan before completing the request.",
+                    f"Verified failed phase: {failed_phase}.",
+                    f"Stable error code: {stable_error_code or 'E_EXECUTION_BLOCKED'}.",
+                ]
+            )
+        elif bool(task_requirements.get("attachment_evidence_required")) and not bool(task_requirements.get("multimodal_chain_supported")):
             reason_hint = "multimodal_chain_unsupported"
             reason_class = "multimodal_chain_unsupported"
             failure_scope = "multimodal"
@@ -2600,12 +2627,12 @@ def build_user_facing_failure_summary_v1(
             disallowed_inferences=disallowed_inferences,
         )
 
-    if stable_error_code.startswith("E_TASK_") or stable_error_code in {
-        "E_ACTION_OPERATOR_UNSUPPORTED",
-        "E_COMMUNICATOR_ACTION_INVALID",
-        "E_MESSAGE_TASK_PHASE_VIOLATION",
-    }:
+    if _is_invalid_internal_plan_error_code(stable_error_code):
         reason_class = "invalid_internal_plan"
+        template_key = "blocker.invalid_internal_plan"
+        failure_scope = "planning"
+        user_actionability = "retry_after_runtime_repair"
+        next_step_hint = "Explain that the assistant produced an invalid or unfinished internal action plan before it could complete the request."
         allowed_user_visible_facts.extend(
             [
                 "The assistant produced an invalid or unfinished internal action plan before completing the request.",

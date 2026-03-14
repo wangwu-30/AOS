@@ -24,7 +24,7 @@ from agentos_next.kernel.memory_store import FileMemoryStore
 from agentos_next.kernel.scheduler_store import FileSchedulerStore
 from agentos_next.kernel.types import TraceContext
 from agentos_next.pa.event_log import FileEventLog
-from agentos_next.pa.outbox_store import OutboxItem
+from agentos_next.pa.outbox_store import FileOutboxStore, OutboxItem
 from agentos_next.runtime.playwright_web_runtime import PlaywrightProbeResult
 
 
@@ -934,6 +934,77 @@ class TestThread044PAPolling(unittest.TestCase):
             log_text = buf.getvalue()
             self.assertIn("Runtime execution failed for update 4497", log_text)
             self.assertIn("Reply send failed for update 4497", log_text)
+
+    def test_polling_hold_runtime_synthesizes_hitl_delivery(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="agentos_next_t044_hold_delivery_") as td:
+            root = Path(td)
+            data_dir = root / "data"
+            pkg_dir = root / "pkg"
+            make_minimal_skill_package(pkg_dir)
+            sent: list[dict[str, Any]] = []
+            buf = io.StringIO()
+
+            evidence = FileEvidenceStore(data_dir=data_dir)
+            err_ref = evidence.add_json(
+                {
+                    "error_code": "E_HITL_REQUIRED",
+                    "message": "execution paused for HITL after budget exhaustion",
+                },
+                kind="error",
+            )
+
+            def _send(url: str, payload: dict[str, Any]) -> bool:
+                sent.append({"url": url, "payload": dict(payload)})
+                return True
+
+            svc = PAPollingService(
+                PAPollingServiceConfig(
+                    data_dir=str(data_dir),
+                    bot_token="token-044",
+                    workspace_id="ws044",
+                    skill_ref=str(pkg_dir),
+                    verify_asvp=False,
+                ),
+                send_func=_send,
+            )
+
+            with contextlib.redirect_stdout(buf):
+                with patch(
+                    "agentos_next.apps.pa_polling_service.run_assistant_runtime_async",
+                    return_value=AssistantLoopResult(
+                        ok=False,
+                        final_output=None,
+                        error_code="E_HITL_REQUIRED",
+                        steps=[],
+                        trace=TraceContext(trace_id="tr_hold", turn_id="turn_hold", span_id="span_hold"),
+                        evidence_refs=[err_ref.ref],
+                        followup_plan_ref="",
+                        followup_task_id=None,
+                        delivery_state="hold",
+                    ),
+                ):
+                    with patch(
+                        "agentos_next.apps.pa_polling_service.urllib.request.urlopen",
+                        return_value=_FakeHTTPResponse(_updates_payload(update_id=4498, text="可以叫我王五")),
+                    ):
+                        out = svc.run_once(offset=None)
+
+            self.assertTrue(out.get("ok"))
+            self.assertEqual(out.get("reply_sent"), 1)
+            msg_calls = [x for x in sent if str(x.get("url") or "").endswith("/sendMessage")]
+            self.assertEqual(len(msg_calls), 1)
+            self.assertEqual(msg_calls[0]["payload"].get("text"), "这次处理已暂停，需要人工继续处理后才能完成。")
+
+            outbox = FileOutboxStore(data_dir=data_dir).get(workspace_id="ws044", event_id="tg_update_4498")
+            self.assertIsNotNone(outbox)
+            assert outbox is not None
+            self.assertEqual(outbox.execute_status, "hold")
+            self.assertEqual(outbox.reply_text, "这次处理已暂停，需要人工继续处理后才能完成。")
+            self.assertEqual(outbox.deliveries[0].get("delivery_stage"), "hold")
+
+            log_text = buf.getvalue()
+            self.assertIn("Runtime execution failed for update 4498", log_text)
+            self.assertIn("Reply sent for update 4498", log_text)
 
     def test_polling_memory_context_is_forwarded_to_assistant_runtime(self) -> None:
         with tempfile.TemporaryDirectory(prefix="agentos_next_t044_memctx_") as td:

@@ -33,6 +33,7 @@ from agentos_next.runtime.playwright_web_runtime import (
     playwright_search,
 )
 from agentos_next.skills.llm_execution import build_prompt, execute_skill_via_llm
+from agentos_next.skills.jsonschema_subset import validate_instance
 from agentos_next.skills.package_loader import SkillPackageLoader
 from tests.admission_helpers import make_minimal_skill_package
 
@@ -151,6 +152,18 @@ class _CaptureLLMBackend:
 
     def complete_json(self, *, prompt, json_schema, safety, model_id=None, stream_callback=None):  # noqa: ANN001
         self.last_schema = dict(json_schema)
+        return dict(self.payload)
+
+
+class _StrictSchemaLLMBackend:
+    def __init__(self, payload: dict) -> None:
+        self.payload = payload
+        self.last_schema: dict | None = None
+
+    def complete_json(self, *, prompt, json_schema, safety, model_id=None, stream_callback=None):  # noqa: ANN001
+        del prompt, safety, model_id, stream_callback
+        self.last_schema = dict(json_schema)
+        validate_instance(dict(self.payload), json_schema)
         return dict(self.payload)
 
 
@@ -476,8 +489,15 @@ class TestThread047RuntimeCapabilitiesAndWeb(unittest.TestCase):
             },
         )
 
-        self.assertIn("builtin://web.search(query, limit?)", prompt)
-        self.assertIn("builtin://web.browse(url)", prompt)
+        self.assertIn("Worker Task Operator Refs:", prompt)
+        self.assertIn("builtin://web.search", prompt)
+        self.assertIn("builtin://web.browse", prompt)
+        self.assertNotIn("Granted Operators:", prompt)
+        self.assertNotIn("builtin://web.search(query, limit?)", prompt)
+        self.assertNotIn("builtin://web.browse(url)", prompt)
+        self.assertIn("MUST NOT emit top-level actions", prompt)
+        self.assertNotIn("reply: string", prompt)
+        self.assertNotIn("Worker-local tool actions to perform.", prompt)
         self.assertNotIn("provider='", prompt)
         self.assertNotIn("builtin://browseruse.search", prompt)
 
@@ -673,6 +693,142 @@ class TestThread047RuntimeCapabilitiesAndWeb(unittest.TestCase):
             assert backend.last_schema is not None
             self.assertIn("actions", backend.last_schema.get("properties", {}))
             self.assertEqual(out.output, {"ok": True})
+
+    def test_execute_skill_via_llm_uses_phase_scoped_schema_for_planner(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill_dir = root / "examples" / "skills" / "personal_assistant_brief"
+        pkg = SkillPackageLoader(verify_asvp=False).load(skill_dir)
+        backend = _CaptureLLMBackend({"status": "continue", "worker_tasks": []})
+
+        execute_skill_via_llm(
+            pkg=pkg,
+            input_obj={"request": "告诉我今天北京天气"},
+            backend=backend,
+            safety=LLMSafetyGate(),
+            policy_context={
+                "active_prompt_profile": "planner",
+                "effective_runtime_capabilities": _effective_caps("web_search", "web_browse"),
+            },
+        )
+
+        assert backend.last_schema is not None
+        self.assertIn("worker_tasks", backend.last_schema.get("properties", {}))
+        self.assertNotIn("actions", backend.last_schema.get("properties", {}))
+        self.assertNotIn("reply", backend.last_schema.get("properties", {}))
+
+    def test_execute_skill_via_llm_planner_normalizes_legacy_actions_into_worker_tasks(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill_dir = root / "examples" / "skills" / "personal_assistant_brief"
+        pkg = SkillPackageLoader(verify_asvp=False).load(skill_dir)
+        backend = _StrictSchemaLLMBackend(
+            {
+                "status": "continue",
+                "actions": [
+                    {
+                        "action_id": "search_weather",
+                        "operator_ref": "builtin://web.search",
+                        "arguments": {"query": "北京 今天天气"},
+                    }
+                ],
+            }
+        )
+
+        out = execute_skill_via_llm(
+            pkg=pkg,
+            input_obj={"request": "告诉我今天北京天气"},
+            backend=backend,
+            safety=LLMSafetyGate(),
+            policy_context={"active_prompt_profile": "planner"},
+        )
+
+        worker_tasks = out.output.get("worker_tasks") or []
+        self.assertEqual(len(worker_tasks), 1)
+        self.assertEqual(worker_tasks[0]["allowed_operator_refs"], ["builtin://web.search"])
+        self.assertEqual(worker_tasks[0]["tool_budget"]["max_calls"], 1)
+        self.assertNotIn("actions", out.output)
+
+    def test_execute_skill_via_llm_planner_tolerates_non_object_tool_budget_in_raw_output(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill_dir = root / "examples" / "skills" / "personal_assistant_brief"
+        pkg = SkillPackageLoader(verify_asvp=False).load(skill_dir)
+        backend = _StrictSchemaLLMBackend(
+            {
+                "status": "continue",
+                "worker_tasks": [
+                    {
+                        "worker_task_id": "worker_weather",
+                        "objective": "查询北京天气",
+                        "depends_on": [],
+                        "allowed_operator_refs": ["builtin://web.search"],
+                        "scope_summary": "只读天气查询",
+                        "completion_contract_ref": "worker_contract:weather",
+                        "tool_budget": "default",
+                        "time_budget_ms": 8000,
+                    }
+                ],
+            }
+        )
+
+        out = execute_skill_via_llm(
+            pkg=pkg,
+            input_obj={"request": "告诉我今天北京天气"},
+            backend=backend,
+            safety=LLMSafetyGate(),
+            policy_context={"active_prompt_profile": "planner"},
+        )
+
+        worker_tasks = out.output.get("worker_tasks") or []
+        self.assertEqual(len(worker_tasks), 1)
+        self.assertEqual(
+            worker_tasks[0]["tool_budget"],
+            {"max_calls": 1, "max_parallel_calls": 1, "retry_read_only_tools": False},
+        )
+
+    def test_execute_skill_via_llm_intent_router_drops_phase_invalid_actions(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill_dir = root / "examples" / "skills" / "personal_assistant_brief"
+        pkg = SkillPackageLoader(verify_asvp=False).load(skill_dir)
+        backend = _StrictSchemaLLMBackend(
+            {
+                "status": "done",
+                "reasoning": "用户意图明确，可进入后续规划。",
+                "actions": [
+                    {
+                        "operator_ref": "builtin://web.search",
+                        "arguments": {"query": "北京 今天天气"},
+                    }
+                ],
+            }
+        )
+
+        out = execute_skill_via_llm(
+            pkg=pkg,
+            input_obj={"request": "告诉我今天北京天气"},
+            backend=backend,
+            safety=LLMSafetyGate(),
+            policy_context={"active_prompt_profile": "intent_router"},
+        )
+
+        self.assertEqual(out.output.get("status"), "done")
+        self.assertEqual(out.output.get("reasoning"), "用户意图明确，可进入后续规划。")
+        self.assertNotIn("actions", out.output)
+
+    def test_execute_skill_via_llm_executor_explicit_empty_actions_clear_synthesized_defaults(self) -> None:
+        root = Path(__file__).resolve().parents[1]
+        skill_dir = root / "examples" / "skills" / "personal_assistant_brief"
+        pkg = SkillPackageLoader(verify_asvp=False).load(skill_dir)
+        backend = _StrictSchemaLLMBackend({"status": "done", "actions": []})
+
+        out = execute_skill_via_llm(
+            pkg=pkg,
+            input_obj={"request": "分析这个项目并给出建议"},
+            backend=backend,
+            safety=LLMSafetyGate(),
+            policy_context={"active_prompt_profile": "executor"},
+        )
+
+        self.assertEqual(out.output.get("status"), "done")
+        self.assertEqual(out.output.get("actions"), [])
 
     def test_execute_skill_via_llm_passes_selected_media_inputs(self) -> None:
         root = Path(__file__).resolve().parents[1]
