@@ -75,7 +75,7 @@
   - 先固定安全回退点，再一次性冻结 canonical V1 类型。
 - 当前状态（Current State）：
   - 安全回退点 commit `47c850e` 已完成。
-  - canonical V1 类型冻结尚未开始。
+  - canonical V1 类型冻结已完成，类型入口位于 `src/agentos_next/kernel/types.py`。
 - 重点工作（Key Workstreams）：
   - 在 `src/agentos_next/kernel/types.py` 或等价 canonical 类型文件中定义：
     - `ResourceBudgetV1`

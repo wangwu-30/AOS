@@ -33,14 +33,14 @@
 
 ### W0. 安全点确认与 canonical V1 类型冻结
 
-- 状态（Status）：`in_progress`
+- 状态（Status）：`done`
 - 阶段（Phase）：`Phase 0`
 - 优先级（Priority）：`P0`
 - 目标文件（Target Files）：
   - `src/agentos_next/kernel/types.py`
 - 输出（Output）：
   - 安全回退点 commit `47c850e` 已完成（done）
-  - canonical V1 类型冻结尚未开始（todo）
+  - canonical V1 类型冻结已完成（done）
   - 在单一类型入口中定义：
     - `ResourceBudgetV1`
     - `ResourceCostVectorV1`
