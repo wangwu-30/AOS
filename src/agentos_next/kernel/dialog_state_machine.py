@@ -5,8 +5,7 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
-
+from typing import Optional
 
 DialogStatus = str  # OPEN|RUNNING|BLOCKED|IDLE|CLOSED|FAILED
 

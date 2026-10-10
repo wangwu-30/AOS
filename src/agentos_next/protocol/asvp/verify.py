@@ -4,8 +4,12 @@ from pathlib import Path
 
 from .crypto_ed25519 import verify as ed25519_verify
 from .errors import ASVPVerificationFailed
-from .manifest import assert_no_extra_files, iter_content_files, load_manifest
-from .manifest import _sha256_file  # internal use in verify
+from .manifest import (
+    _sha256_file,  # internal use in verify
+    assert_no_extra_files,
+    iter_content_files,
+    load_manifest,
+)
 
 
 def verify_skill_dir(*, skill_dir: Path, public_keys_dir: Path) -> None:

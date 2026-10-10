@@ -128,7 +128,9 @@ def _assistant_submit(
     from agentos_next.apps.assistant_loop import AssistantLoopRequest
     from agentos_next.apps.assistant_runtime import run_assistant_runtime_async
     from agentos_next.apps.canonical_task_ingress import build_canonical_task_ingress_request
-    from agentos_next.kernel.effective_runtime_capabilities import capability_names_from_effective_runtime_capabilities
+    from agentos_next.kernel.effective_runtime_capabilities import (
+        capability_names_from_effective_runtime_capabilities,
+    )
 
     inp = _require_dict(req.arguments, name="arguments")
     query = _require_str(inp.get("query"), name="query", max_bytes=32768)

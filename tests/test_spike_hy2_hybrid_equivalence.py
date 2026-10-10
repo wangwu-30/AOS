@@ -6,8 +6,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 import bootstrap  # noqa: F401
-
-from agentos_next.apps.assistant_runtime import AssistantRuntime, run_assistant_runtime_async
 from hybrid_gate_helpers import (
     SCENARIOS,
     assert_refs_traceable,
@@ -17,6 +15,8 @@ from hybrid_gate_helpers import (
     collect_traceable_refs,
     run_scenario,
 )
+
+from agentos_next.apps.assistant_runtime import AssistantRuntime, run_assistant_runtime_async
 
 
 class TestSpikeHY2HybridEquivalence(unittest.IsolatedAsyncioTestCase):

@@ -4,7 +4,6 @@ import json
 from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any, Literal, Optional, TypedDict
 
-
 # NOTE: This is the shared V0 contract for THREAD-033/034/035.
 # Spec: docs/specs/PA_EVENT_ENVELOPE_V0.md
 

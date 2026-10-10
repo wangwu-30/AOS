@@ -18,10 +18,11 @@ for p in (str(TESTS), str(SRC)):
         sys.path.insert(0, p)
 
 from admission_helpers import make_minimal_skill_package
-from agentos_next.apps.pa_webhook_server import PAWebhookService, PAWebhookServiceConfig
-from agentos_next.apps.assistant_loop import AssistantLoopResult
-from agentos_next.kernel.types import TraceContext
 from fixtures.telegram_webhook_fixtures import generate_telegram_webhook_fixture
+
+from agentos_next.apps.assistant_loop import AssistantLoopResult
+from agentos_next.apps.pa_webhook_server import PAWebhookService, PAWebhookServiceConfig
+from agentos_next.kernel.types import TraceContext
 
 
 def _send_message_delivery(*, text: str, key: str) -> dict[str, Any]:

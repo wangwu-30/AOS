@@ -15,12 +15,10 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-from tests.admission_helpers import make_minimal_skill_package as _unused_make_minimal_skill_package
 from agentos_next import cli as cli_mod
 from agentos_next.apps.assistant_loop import AssistantLoopResult
 from agentos_next.apps.pa_polling_service import PAPollingService, PAPollingServiceConfig
 from agentos_next.kernel.evidence_store import FileEvidenceStore
-from agentos_next.kernel.memory_store import FileMemoryStore
 from agentos_next.kernel.scheduler_store import FileSchedulerStore
 from agentos_next.kernel.types import TraceContext
 from agentos_next.pa.event_log import FileEventLog
@@ -768,7 +766,7 @@ class TestThread044PAPolling(unittest.TestCase):
                 kind="error",
             )
 
-            outbox = OutboxItem(
+            OutboxItem(
                 schema_version="1.0.0",
                 stored_at_utc="2026-03-07T00:00:00Z",
                 workspace_id="ws044",

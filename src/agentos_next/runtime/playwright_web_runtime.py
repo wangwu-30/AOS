@@ -8,7 +8,6 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any
 
-
 PLAYWRIGHT_INSTALL_HINT = (
     "Playwright runtime is unavailable; install the Python package and browser binaries with "
     "`python3 -m pip install playwright` and `python3 -m playwright install chromium`."

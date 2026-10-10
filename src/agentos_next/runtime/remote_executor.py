@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult, Executor, ExecuteTiming
+from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult, ExecuteTiming, Executor
 from agentos_next.kernel.policy_engine import emit_policy_decision, evaluate_execute_policy
 
 
@@ -72,7 +72,7 @@ class RemoteExecutor(Executor):
         local_only_keys = {"public_keys_dir", "backend"}
         ext = {k: v for k, v in policy.items() if k not in local_only_keys and k not in ("model", "model_id_override")}
 
-        payload = {
+        {
             "workspace_id": req.workspace_id,
             "operator_ref": req.operator_ref,
             "arguments": req.arguments,

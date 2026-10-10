@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
 
-from .types import EvidenceKind, EvidenceRef
 from .redaction import redact_json, redact_text
+from .types import EvidenceKind, EvidenceRef
 
 
 def _utc_iso() -> str:

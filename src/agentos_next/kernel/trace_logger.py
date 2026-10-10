@@ -5,7 +5,7 @@ import os
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from .types import EvidenceRef, TraceEvent
 

@@ -6,28 +6,32 @@ from pathlib import Path
 from typing import Any
 
 from agentos_next.compiler.skill_contract import load_contract
-from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult, Executor, ExecuteTiming
+from agentos_next.kernel.evidence_store import FileEvidenceStore
+from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult, ExecuteTiming, Executor
 from agentos_next.kernel.local_skill_approval import (
     FileLocalSkillApprovalStore,
     resolve_local_skill_approval_context,
 )
 from agentos_next.kernel.policy_engine import emit_policy_decision, evaluate_execute_policy
-from agentos_next.runtime.execute_mapping import package_run_result_to_execute_result
-from agentos_next.runtime.package_runner import PackageRunRequest, PackageRunner
-from agentos_next.runtime.builtin_memory import maybe_execute_builtin_memory
-from agentos_next.runtime.builtin_scheduler import maybe_execute_builtin_scheduler
-from agentos_next.runtime.builtin_fs import maybe_execute_builtin_fs
-from agentos_next.runtime.builtin_channel import maybe_execute_builtin_channel
-from agentos_next.runtime.builtin_time import maybe_execute_builtin_time
-from agentos_next.runtime.builtin_web import maybe_execute_builtin_web
-from agentos_next.runtime.builtin_research import maybe_execute_builtin_research
-from agentos_next.runtime.builtin_operator import maybe_execute_builtin_operator
-from agentos_next.runtime.builtin_creator import maybe_execute_builtin_creator
-from agentos_next.runtime.builtin_assistant import maybe_execute_builtin_assistant
-from agentos_next.kernel.evidence_store import FileEvidenceStore
+from agentos_next.kernel.skill_registry import (
+    FileSkillRegistry,
+    SkillRegistryError,
+    try_resolve_registry_ref,
+)
 from agentos_next.kernel.trace_logger import FileTraceLogger
 from agentos_next.kernel.types import EvidenceRef, TraceEvent
-from agentos_next.kernel.skill_registry import FileSkillRegistry, SkillRegistryError, try_resolve_registry_ref
+from agentos_next.runtime.builtin_assistant import maybe_execute_builtin_assistant
+from agentos_next.runtime.builtin_channel import maybe_execute_builtin_channel
+from agentos_next.runtime.builtin_creator import maybe_execute_builtin_creator
+from agentos_next.runtime.builtin_fs import maybe_execute_builtin_fs
+from agentos_next.runtime.builtin_memory import maybe_execute_builtin_memory
+from agentos_next.runtime.builtin_operator import maybe_execute_builtin_operator
+from agentos_next.runtime.builtin_research import maybe_execute_builtin_research
+from agentos_next.runtime.builtin_scheduler import maybe_execute_builtin_scheduler
+from agentos_next.runtime.builtin_time import maybe_execute_builtin_time
+from agentos_next.runtime.builtin_web import maybe_execute_builtin_web
+from agentos_next.runtime.execute_mapping import package_run_result_to_execute_result
+from agentos_next.runtime.package_runner import PackageRunner, PackageRunRequest
 
 
 class LocalExecutor(Executor):

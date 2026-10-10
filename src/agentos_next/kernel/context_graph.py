@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 CONTEXT_ACTIONS_V1 = (
     "context_expand",
     "context_shift",

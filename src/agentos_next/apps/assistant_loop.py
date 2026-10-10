@@ -9,41 +9,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from agentos_next.kernel.capabilities import capability_items_for_policy_context
-from agentos_next.kernel.agent_profile import FileAgentProfileStore, make_axiom_review_candidate
-from agentos_next.kernel.effective_runtime_capabilities import (
-    build_effective_runtime_capabilities_v1,
-    capability_items_from_effective_runtime_capabilities,
-    capability_names_from_effective_runtime_capabilities,
-    with_effective_runtime_capability_names,
+from agentos_next.apps.query_gated_runtime import (
+    build_context_plane_pack_v1,
+    build_query_hypothesis,
+    build_user_facing_failure_summary_v1,
+    compile_query_for_assistant_loop,
+    verify_assistant_execution,
 )
-from agentos_next.kernel.observation_learning import build_observation_learning_candidates_v1
-from agentos_next.kernel.research_doctrine import build_research_evidence_pack_v1
-from agentos_next.kernel.soul_profile import FileSoulProfileStore
-from agentos_next.kernel.capsule_store import build_global_capsule_v1, build_project_capsule_v1, resolve_active_project_v1
-from agentos_next.kernel.context_plane_cache import FileContextPlaneCache
-from agentos_next.kernel.evidence_store import FileEvidenceStore
-from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult
-from agentos_next.kernel.memory_store import MemoryConsolidatorV2
-from agentos_next.kernel.orchestrator import Orchestrator
-from agentos_next.kernel.trace_logger import FileTraceLogger
-from agentos_next.kernel.types import TraceContext, TraceEvent
-from agentos_next.kernel.hypothesis_store import FileHypothesisStore, HypothesisRecord
-from agentos_next.kernel.theorem_store import FileTheoremStore, build_theorem_record_v1
-from agentos_next.kernel.runtime_snapshot_store import FileRuntimeSnapshotStore
-from agentos_next.kernel.runtime_event_log import FileRuntimeEventLog, emit_output_event
-from agentos_next.kernel.execution_lane import (
-    classify_execution_lane,
-    clamp_tool_budget_for_lane,
-    default_stop_policy_for_lane,
-    default_token_budget_for_lane,
-    execution_lane_policy_payload,
-    next_execution_lane,
-    normalize_execution_lane,
-)
-from agentos_next.kernel.task_service import KernelTaskService, TaskRecord, TaskRunResult, TaskSpec
-from agentos_next.runtime.local_executor import LocalExecutor
-from agentos_next.pa.runtime_graph_scheduler import RuntimeGraphSchedulerBootstrap
 from agentos_next.apps.runtime_graph_session import (
     NullRuntimeGraphSession,
     RuntimeGraphSession,
@@ -51,16 +23,53 @@ from agentos_next.apps.runtime_graph_session import (
     WorkerTaskSpec,
 )
 from agentos_next.apps.worker_runtime import (
-    WorkerReasonDecision,
     WorkerReActOutcome,
     WorkerReActRuntime,
-    WorkerTaskRuntimeInput,
+    WorkerReasonDecision,
     WorkerStopPolicy,
+    WorkerTaskRuntimeInput,
     WorkerTokenBudget,
     WorkerToolBudget,
     WorkerToolCall,
     WorkerToolCallResult,
 )
+from agentos_next.kernel.agent_profile import FileAgentProfileStore, make_axiom_review_candidate
+from agentos_next.kernel.capabilities import capability_items_for_policy_context
+from agentos_next.kernel.capsule_store import (
+    build_global_capsule_v1,
+    build_project_capsule_v1,
+    resolve_active_project_v1,
+)
+from agentos_next.kernel.context_plane_cache import FileContextPlaneCache
+from agentos_next.kernel.effective_runtime_capabilities import (
+    build_effective_runtime_capabilities_v1,
+    capability_items_from_effective_runtime_capabilities,
+    capability_names_from_effective_runtime_capabilities,
+    with_effective_runtime_capability_names,
+)
+from agentos_next.kernel.evidence_store import FileEvidenceStore
+from agentos_next.kernel.execution_lane import (
+    clamp_tool_budget_for_lane,
+    classify_execution_lane,
+    default_stop_policy_for_lane,
+    default_token_budget_for_lane,
+    execution_lane_policy_payload,
+    next_execution_lane,
+    normalize_execution_lane,
+)
+from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult
+from agentos_next.kernel.hypothesis_store import FileHypothesisStore, HypothesisRecord
+from agentos_next.kernel.memory_store import MemoryConsolidatorV2
+from agentos_next.kernel.observation_learning import build_observation_learning_candidates_v1
+from agentos_next.kernel.orchestrator import Orchestrator
+from agentos_next.kernel.research_doctrine import build_research_evidence_pack_v1
+from agentos_next.kernel.runtime_event_log import FileRuntimeEventLog, emit_output_event
+from agentos_next.kernel.runtime_snapshot_store import FileRuntimeSnapshotStore
+from agentos_next.kernel.soul_profile import FileSoulProfileStore
+from agentos_next.kernel.task_service import KernelTaskService, TaskRecord, TaskRunResult, TaskSpec
+from agentos_next.kernel.theorem_store import FileTheoremStore, build_theorem_record_v1
+from agentos_next.kernel.trace_logger import FileTraceLogger
+from agentos_next.kernel.types import TraceContext, TraceEvent
 from agentos_next.llm.backend import (
     CodexOAuthLLMBackend,
     DoubaoArkLLMBackend,
@@ -71,13 +80,8 @@ from agentos_next.llm.backend import (
     is_remote_llm_backend,
 )
 from agentos_next.llm.openai_codex_oauth import OpenAICodexOAuthProvider
-from agentos_next.apps.query_gated_runtime import (
-    build_user_facing_failure_summary_v1,
-    build_context_plane_pack_v1,
-    build_query_hypothesis,
-    compile_query_for_assistant_loop,
-    verify_assistant_execution,
-)
+from agentos_next.pa.runtime_graph_scheduler import RuntimeGraphSchedulerBootstrap
+from agentos_next.runtime.local_executor import LocalExecutor
 
 
 def _utc_iso() -> str:
@@ -2895,12 +2899,11 @@ async def run_assistant_loop_async(req: AssistantLoopRequest) -> AssistantLoopRe
         action_notes: list[dict[str, Any]] = []
         delivered: list[dict[str, Any]] = []
         executed_non_delivery = False
-        loops_max = 1
         tool_calls_max = 0
         try:
-            loops_max = max(1, int(query_budget.get("loops_max") or 1))
+            max(1, int(query_budget.get("loops_max") or 1))
         except Exception:
-            loops_max = 1
+            pass
         try:
             tool_calls_max = int(query_budget.get("tool_calls_max") or 0)
         except Exception:

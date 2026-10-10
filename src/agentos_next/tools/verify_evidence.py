@@ -8,7 +8,6 @@ from typing import Any, Optional
 
 from agentos_next.kernel.evidence_manifest import iter_turn_ids_for_trace, verify_turn_manifest
 
-
 SCHEMA_VERSION = "1.0.0"
 
 

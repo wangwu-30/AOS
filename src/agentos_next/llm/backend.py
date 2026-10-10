@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import base64
 import json
 import os
 import threading
-import base64
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Optional, Protocol
 
-from agentos_next.skills.jsonschema_subset import ValidationError, synthesize_instance, validate_instance
+from agentos_next.skills.jsonschema_subset import (
+    ValidationError,
+    synthesize_instance,
+    validate_instance,
+)
 
 from .openai_codex_oauth import (
     OpenAICodexOAuthProvider,

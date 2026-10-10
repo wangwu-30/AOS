@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 PROMPT_PROFILE_IDS_V1 = (
     "intent_router",
     "planner",

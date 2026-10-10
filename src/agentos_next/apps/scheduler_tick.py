@@ -7,15 +7,20 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
+from agentos_next.kernel.dialog_state_machine import build_user_message_digest
 from agentos_next.kernel.evidence_store import FileEvidenceStore
 from agentos_next.kernel.executor import ExecuteRequest
 from agentos_next.kernel.orchestrator import Orchestrator
-from agentos_next.kernel.scheduler_store import FileSchedulerStore, ScheduledTask, SchedulerError, next_cron_time
+from agentos_next.kernel.scheduler_store import (
+    FileSchedulerStore,
+    ScheduledTask,
+    SchedulerError,
+    next_cron_time,
+)
 from agentos_next.kernel.trace_logger import FileTraceLogger
 from agentos_next.kernel.types import EvidenceRef, TraceContext, TraceEvent
-from agentos_next.kernel.dialog_state_machine import build_user_message_digest
 
 
 def _utc_iso(dt: Optional[datetime] = None) -> str:

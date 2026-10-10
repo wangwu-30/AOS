@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-
 CONTINUITY_V2_SCHEMA_VERSION = "2.0.0"
 
 

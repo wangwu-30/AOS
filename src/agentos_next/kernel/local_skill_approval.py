@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-
 LOCAL_SKILL_LAYER_MARKERS = (
     "local_skills",
     ".agentos/local_skills",

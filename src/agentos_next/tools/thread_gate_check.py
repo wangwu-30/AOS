@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-
 SCHEMA_VERSION = "1.0.0"
 
 REQUIRED_MESSAGE_CONTRACT_FIELDS = {

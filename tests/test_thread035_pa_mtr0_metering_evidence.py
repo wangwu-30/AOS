@@ -6,15 +6,15 @@ import unittest
 from pathlib import Path
 
 import bootstrap  # noqa: F401
-
 from admission_helpers import make_minimal_skill_package
-from agentos_next.apps.telegram_connector import TelegramChannelAdapter
-from agentos_next.kernel.evidence_store import FileEvidenceStore
-from agentos_next.pa.ev1_runtime import EV1Config, EV1Runtime, PA_EV_ERROR_REPLAY_DENY
 from fixtures.telegram_webhook_fixtures import (
     generate_secret_token_fixture,
     generate_telegram_webhook_fixture,
 )
+
+from agentos_next.apps.telegram_connector import TelegramChannelAdapter
+from agentos_next.kernel.evidence_store import FileEvidenceStore
+from agentos_next.pa.ev1_runtime import PA_EV_ERROR_REPLAY_DENY, EV1Config, EV1Runtime
 
 
 class _CaptureDispatcher:

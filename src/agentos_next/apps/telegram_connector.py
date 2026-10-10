@@ -1,9 +1,10 @@
-import json
 import datetime
+import json
 from dataclasses import dataclass
 from typing import Any, Literal, Optional
 
 from agentos_next.apps.telegram_models import TelegramUpdate
+
 
 # Spec-only V0 envelope from THREAD-033 Phase-1 freeze
 @dataclass(frozen=True)

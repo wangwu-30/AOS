@@ -14,7 +14,9 @@ from agentos_next.kernel.agent_profile import (
     validate_agent_profile_v1,
 )
 from agentos_next.kernel.context_graph import build_context_graph_v1, build_task_context_views_v1
-from agentos_next.kernel.effective_runtime_capabilities import capability_names_from_effective_runtime_capabilities
+from agentos_next.kernel.effective_runtime_capabilities import (
+    capability_names_from_effective_runtime_capabilities,
+)
 from agentos_next.kernel.execution_lane import (
     default_stop_policy_for_lane,
     default_token_budget_for_lane,
@@ -26,8 +28,11 @@ from agentos_next.kernel.research_doctrine import derive_research_requirements_v
 from agentos_next.kernel.runtime_policy_bundle import FileRuntimePolicyBundleStore
 from agentos_next.kernel.soul_profile import FileSoulProfileStore, validate_soul_profile_v1
 from agentos_next.kernel.types import TraceContext
-from agentos_next.pa.task_graph import build_task_bundle_v1, build_task_execution_policy_v1, make_file_ref_v1
-
+from agentos_next.pa.task_graph import (
+    build_task_bundle_v1,
+    build_task_execution_policy_v1,
+    make_file_ref_v1,
+)
 
 QueryMode = Literal["simple", "standard", "complex"]
 
@@ -2334,7 +2339,7 @@ def _build_memory_search_failure_summary(
     args = dict(failed_step.get("arguments") or {}) if isinstance(failed_step.get("arguments"), dict) else {}
     query = str(failed_output.get("query") or args.get("query") or "").strip()
     detail = _normalized_failure_detail(failed_output.get("message"))
-    lowered = detail.lower()
+    detail.lower()
     allowed_user_visible_facts = [
         "The assistant could not retrieve the saved memory evidence needed for this request.",
     ]
@@ -3361,8 +3366,6 @@ def compile_query_for_assistant_loop(
         "budget": budget,
         "termination_policy": "on budget exhaustion, hold current execution state and raise HITL_REQUIRED with attempted_paths+evidence",
         "mode": mode,
-        "agent_profile": profile_obj,
-        "context_planes": context_obj,
         "hypothesis": {
             "current": current_hypothesis,
             "repeated_without_new_evidence": False,

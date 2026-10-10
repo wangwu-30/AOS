@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-
 TASK_GRAPH_SCHEMA_VERSION: str = "1.1.0"
 TASK_GRAPH_COMPAT_SCHEMA_VERSIONS: tuple[str, ...] = ("1.0.0", TASK_GRAPH_SCHEMA_VERSION)
 RUNTIME_GRAPH_TYPE = "runtime_graph_v1"

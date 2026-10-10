@@ -6,11 +6,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import bootstrap  # noqa: F401
+from admission_helpers import make_minimal_skill_package
 
 from agentos_next.kernel.types import TraceContext
-from agentos_next.runtime.package_runner import PackageRunRequest, PackageRunner
-
-from admission_helpers import make_minimal_skill_package
+from agentos_next.runtime.package_runner import PackageRunner, PackageRunRequest
 
 
 class TestAdmissionTraceJSONL(unittest.TestCase):

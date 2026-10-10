@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-
 HypothesisResult = Literal["confirmed", "rejected", "partial"]
 
 

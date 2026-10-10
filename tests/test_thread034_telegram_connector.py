@@ -1,8 +1,8 @@
 import json
 import unittest
-from typing import Any
 
 from agentos_next.apps.telegram_connector import EventEnvelopeV0, TelegramChannelAdapter
+
 
 class MockKernelDispatcher:
     def __init__(self):

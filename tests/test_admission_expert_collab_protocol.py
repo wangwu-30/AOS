@@ -6,7 +6,6 @@ from pathlib import Path
 
 import bootstrap  # noqa: F401
 
-
 REQUIRED_MESSAGE_CONTRACT_FIELDS = {
     "id",
     "author",

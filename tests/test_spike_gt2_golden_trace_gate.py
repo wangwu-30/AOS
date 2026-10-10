@@ -5,9 +5,14 @@ import unittest
 from pathlib import Path
 
 import bootstrap  # noqa: F401
+from hybrid_gate_helpers import (
+    SCENARIOS,
+    canonical_result_view,
+    canonical_trace_shape,
+    run_scenario,
+)
 
 from agentos_next.apps.golden_trace_gate import GoldenTraceThresholds, evaluate_golden_trace_gate
-from hybrid_gate_helpers import SCENARIOS, canonical_result_view, canonical_trace_shape, run_scenario
 
 
 class TestSpikeGT2GoldenTraceGate(unittest.IsolatedAsyncioTestCase):
