@@ -6,22 +6,22 @@ from dataclasses import asdict
 from pathlib import Path
 
 import bootstrap  # noqa: F401
-
 from admission_helpers import make_minimal_skill_package
-from agentos_next.apps.telegram_connector import TelegramChannelAdapter
-from agentos_next.kernel.executor import ExecuteResult, ExecuteTiming
-from agentos_next.kernel.types import EvidenceRef
-from agentos_next.pa.ev1_runtime import (
-    EV1Config,
-    EV1Runtime,
-    PA_EV_ERROR_REPLAY_DENY,
-    PA_EV_ERROR_SCHEMA_INVALID,
-    _default_reply_text,
-)
-from agentos_next.kernel.scheduler_store import FileSchedulerStore
 from fixtures.telegram_webhook_fixtures import (
     generate_secret_token_fixture,
     generate_telegram_webhook_fixture,
+)
+
+from agentos_next.apps.telegram_connector import TelegramChannelAdapter
+from agentos_next.kernel.executor import ExecuteResult, ExecuteTiming
+from agentos_next.kernel.scheduler_store import FileSchedulerStore
+from agentos_next.kernel.types import EvidenceRef
+from agentos_next.pa.ev1_runtime import (
+    PA_EV_ERROR_REPLAY_DENY,
+    PA_EV_ERROR_SCHEMA_INVALID,
+    EV1Config,
+    EV1Runtime,
+    _default_reply_text,
 )
 
 

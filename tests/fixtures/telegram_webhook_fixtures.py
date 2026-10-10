@@ -1,5 +1,5 @@
 import json
-import uuid
+
 
 def generate_telegram_webhook_fixture(
     update_id: int = 1000, 

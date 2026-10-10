@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional, Sequence
 
-
 ALLOWED_CAPABILITY_NAMES = {
     "fs_read",
     "fs_write",

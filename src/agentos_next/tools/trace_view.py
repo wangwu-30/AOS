@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import parse_qs, urlencode, urlparse
 
-
 SCHEMA_VERSION = "1.0.0"
 
 
@@ -887,11 +886,12 @@ def render_trace_view_html(view: dict[str, Any]) -> str:
             f"<td><pre>{html.escape(_pretty(data))}</pre></td>"
             "</tr>"
         )
+    empty_row = '<tr><td colspan="5" class="empty-cell">No trace events</td></tr>'
     timeline_html = (
         "<section class='panel slate'>"
         "<h2>Trace Timeline</h2>"
         "<div class='table-wrap'><table><thead><tr><th>Line</th><th>Time</th><th>Event</th><th>Span</th><th>Data</th></tr></thead>"
-        f"<tbody>{''.join(event_rows) if event_rows else '<tr><td colspan=\"5\" class=\"empty-cell\">No trace events</td></tr>'}</tbody>"
+        f"<tbody>{''.join(event_rows) if event_rows else empty_row}</tbody>"
         "</table></div></section>"
     )
 
@@ -911,11 +911,12 @@ def render_trace_view_html(view: dict[str, Any]) -> str:
                 f"<td><pre>{html.escape(_pretty(task.get('payload') or {}))}</pre></td>"
                 "</tr>"
             )
+    empty_task_row = '<tr><td colspan="5" class="empty-cell">No task graph</td></tr>'
     task_graph_html = (
         "<section class='panel sand'>"
         "<h2>PA Task Graph</h2>"
         "<div class='table-wrap'><table><thead><tr><th>Task</th><th>Type</th><th>State</th><th>Error</th><th>Payload</th></tr></thead>"
-        f"<tbody>{''.join(task_rows) if task_rows else '<tr><td colspan=\"5\" class=\"empty-cell\">No task graph</td></tr>'}</tbody>"
+        f"<tbody>{''.join(task_rows) if task_rows else empty_task_row}</tbody>"
         "</table></div></section>"
     )
 
@@ -933,10 +934,11 @@ def render_trace_view_html(view: dict[str, Any]) -> str:
             f"<pre>{html.escape(_pretty(item.get('record') or {}))}</pre>"
             "</details>"
         )
+    empty_task_exec = '<p class="empty">No task executions</p>'
     task_exec_html = (
         "<section class='panel rust'>"
         "<h2>Task Executions</h2>"
-        f"{''.join(task_exec_cards) if task_exec_cards else '<p class=\"empty\">No task executions</p>'}"
+        f"{''.join(task_exec_cards) if task_exec_cards else empty_task_exec}"
         "</section>"
     )
 
@@ -1625,11 +1627,12 @@ def render_trace_catalog_html(catalog: dict[str, Any], *, selected_session_id: s
             f"<div class='turn-assistant'><div class='turn-head'><span class='chip'>assistant</span>{error_chip}</div><p>{entry_subtitle}</p><a class='trace-link' href='{html.escape(entry_href)}'>Open Trace</a></div>"
             "</article>"
         )
+    empty_transcript = '<p class="empty">No session selected.</p>'
     transcript_html = (
         "<section class='transcript'>"
         "<div class='transcript-head'><h2>Conversation History</h2>"
         f"<p>{html.escape(str((active_session or {}).get('conversation_id') or (active_session or {}).get('session_id') or ''))}</p></div>"
-        f"{''.join(transcript_cards) if transcript_cards else '<p class=\"empty\">No session selected.</p>'}"
+        f"{''.join(transcript_cards) if transcript_cards else empty_transcript}"
         "</section>"
     )
 

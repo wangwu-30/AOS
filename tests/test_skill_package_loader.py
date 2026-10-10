@@ -11,7 +11,7 @@ import bootstrap  # noqa: F401
 from agentos_next.protocol.asvp.crypto_ed25519 import generate_keypair
 from agentos_next.protocol.asvp.errors import ASVPCryptoUnavailable
 from agentos_next.protocol.asvp.signing import sign_skill_dir
-from agentos_next.skills.package_loader import SkillPackageLoadError, SkillPackageLoader
+from agentos_next.skills.package_loader import SkillPackageLoader, SkillPackageLoadError
 
 
 def _write_json(path: Path, obj: object) -> None:

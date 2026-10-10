@@ -10,8 +10,8 @@ from pathlib import Path
 from typing import Any, Optional
 from uuid import uuid4
 
-from agentos_next.protocol.asvp.manifest import Manifest, load_manifest
 from agentos_next.compiler.skill_contract import load_contract
+from agentos_next.protocol.asvp.manifest import Manifest, load_manifest
 
 
 class SkillRegistryError(RuntimeError):

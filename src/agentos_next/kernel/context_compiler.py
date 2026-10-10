@@ -3,11 +3,11 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Literal, Optional, Sequence
+from typing import Any, Literal, Optional
 
 from agentos_next.kernel.evidence_store import EvidenceBlob, FileEvidenceStore
 from agentos_next.kernel.memory_store import FileMemoryStore, L1Record
-from agentos_next.kernel.types import EvidenceRef, TraceContext
+from agentos_next.kernel.types import EvidenceRef
 
 # -----------------------------------------------------------------------------
 # Frozen Error Codes & Violations

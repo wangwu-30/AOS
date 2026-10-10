@@ -5,7 +5,6 @@ from pathlib import Path
 
 from agentos_next.kernel.local_skill_approval import (
     FileLocalSkillApprovalStore as KernelLocalSkillApprovalStore,
-    compute_local_skill_fingerprint,
 )
 
 

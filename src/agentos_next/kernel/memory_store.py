@@ -11,7 +11,6 @@ from typing import Any, Iterable, Optional
 
 from agentos_next.kernel.evidence_store import FileEvidenceStore
 
-
 MEMORY_V2_SCHEMA_VERSION = "2.0.0"
 MEMORY_RECORD_KIND_SET = {
     "profile",

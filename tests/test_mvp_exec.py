@@ -9,7 +9,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import bootstrap  # noqa: F401
-
 from admission_helpers import make_minimal_skill_package
 
 

@@ -9,47 +9,44 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult, ExecuteTiming
-from agentos_next.kernel.orchestrator import Orchestrator
+from agentos_next.apps.query_gated_runtime import build_context_plane_pack_v1
 from agentos_next.kernel.agent_profile import FileAgentProfileStore, make_axiom_review_candidate
-from agentos_next.kernel.context_plane_cache import FileContextPlaneCache
-from agentos_next.kernel.hypothesis_store import FileHypothesisStore, HypothesisRecord
-from agentos_next.kernel.types import TraceContext
 from agentos_next.kernel.capabilities import capability_items_for_policy_context
-from agentos_next.runtime.local_executor import LocalExecutor
+from agentos_next.kernel.context_plane_cache import FileContextPlaneCache
 from agentos_next.kernel.evidence_store import FileEvidenceStore
+from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult, ExecuteTiming
+from agentos_next.kernel.hypothesis_store import FileHypothesisStore, HypothesisRecord
 from agentos_next.kernel.memory_store import MemoryConsolidatorV2
+from agentos_next.kernel.orchestrator import Orchestrator
 from agentos_next.kernel.trace_logger import FileTraceLogger
-from agentos_next.kernel.types import TraceEvent
-
+from agentos_next.kernel.types import TraceContext, TraceEvent
 from agentos_next.pa.event_envelope import envelope_to_dict, validate_envelope_v0
 from agentos_next.pa.event_log import FileEventLog
-from agentos_next.pa.outbox_store import FileOutboxStore, OutboxItem
-from agentos_next.pa.metering import write_metering_evidence_v0
 from agentos_next.pa.memory_pipeline import (
     PAMemoryPipelineConfig,
     build_memory_context_for_event,
 )
-from agentos_next.apps.query_gated_runtime import build_context_plane_pack_v1
-from agentos_next.pa.task_graph import (
-    FileTaskGraphStore,
-    TaskGraph,
-    TaskGraphError,
-    TaskNode,
-    TASK_GRAPH_ERROR_CYCLE_DETECTED,
-    add_task,
-    compute_task_fingerprint,
-    recover_incomplete,
-    set_task_state,
-    TASK_GRAPH_SCHEMA_VERSION,
-)
+from agentos_next.pa.metering import write_metering_evidence_v0
+from agentos_next.pa.outbox_store import FileOutboxStore, OutboxItem
 from agentos_next.pa.runtime_error_codes import (
     PA_RUNTIME_ERROR_CONTEXT_FAILED,
     PA_RUNTIME_ERROR_IO_FAILED,
     PA_RUNTIME_ERROR_REPLAY_DENY,
     PA_RUNTIME_ERROR_SCHEMA_INVALID,
 )
-
+from agentos_next.pa.task_graph import (
+    TASK_GRAPH_ERROR_CYCLE_DETECTED,
+    TASK_GRAPH_SCHEMA_VERSION,
+    FileTaskGraphStore,
+    TaskGraph,
+    TaskGraphError,
+    TaskNode,
+    add_task,
+    compute_task_fingerprint,
+    recover_incomplete,
+    set_task_state,
+)
+from agentos_next.runtime.local_executor import LocalExecutor
 
 PA_EV_ERROR_SCHEMA_INVALID = PA_RUNTIME_ERROR_SCHEMA_INVALID
 PA_EV_ERROR_REPLAY_DENY = PA_RUNTIME_ERROR_REPLAY_DENY

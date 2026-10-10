@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
-from unittest.mock import MagicMock
 
 from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult
 from agentos_next.kernel.types import TraceContext

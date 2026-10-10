@@ -6,19 +6,20 @@ from typing import Any, Callable, Optional
 from agentos_next.apps.assistant_runtime import run_assistant_runtime_async
 from agentos_next.apps.pa_assistant_runtime_dispatcher import (
     AssistantRuntimeDispatcher as _AssistantRuntimeDispatcher,
+)
+from agentos_next.apps.pa_assistant_runtime_dispatcher import (
     AssistantRuntimeDispatcherOptions,
     build_assistant_runtime_capability_self_check,
 )
-from agentos_next.apps.pa_workspace_router import PAWorkspaceRouteUnmappedError, PAWorkspaceRouter
+from agentos_next.apps.pa_workspace_router import PAWorkspaceRouter, PAWorkspaceRouteUnmappedError
 from agentos_next.apps.telegram_connector import MISSING_BUDGET, TelegramChannelAdapter
 from agentos_next.apps.telegram_reply import TelegramReplyAdapter
+from agentos_next.pa.outbox_store import OutboxItem
 from agentos_next.pa.runtime_error_codes import (
     PA_RUNTIME_ERROR_CONTEXT_FAILED,
     PA_RUNTIME_ERROR_IO_FAILED,
     PA_RUNTIME_ERROR_REPLAY_DENY,
 )
-from agentos_next.pa.outbox_store import OutboxItem
-
 
 PA_WEBHOOK_ERROR_FAILED = "E_PA_WEBHOOK_FAILED"
 PA_WEBHOOK_ERROR_OUTBOX_INVALID = "E_PA_WEBHOOK_OUTBOX_INVALID"

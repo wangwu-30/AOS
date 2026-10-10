@@ -6,14 +6,15 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import bootstrap  # noqa: F401
 
 from agentos_next.apps.assistant_loop import (
     AssistantLoopRequest,
-    _build_terminal_communicator_request,
     _build_pending_contract,
+    _build_terminal_communicator_request,
     _is_infra_only_hypothesis_record,
     _map_hypothesis_result,
     _phase_output_violation,
@@ -22,9 +23,9 @@ from agentos_next.apps.assistant_loop import (
 from agentos_next.apps.assistant_runtime import run_assistant_runtime_async
 from agentos_next.apps.canonical_task_ingress import build_canonical_task_ingress_request
 from agentos_next.apps.query_gated_runtime import (
-    build_user_facing_failure_summary_v1,
     build_context_plane_pack_v1,
     build_query_hypothesis,
+    build_user_facing_failure_summary_v1,
     compile_query_for_assistant_loop,
     verify_assistant_execution,
 )
@@ -38,9 +39,9 @@ from agentos_next.kernel.runtime_snapshot_store import FileRuntimeSnapshotStore
 from agentos_next.kernel.scheduler_store import FileSchedulerStore
 from agentos_next.kernel.types import TraceContext
 from agentos_next.llm.backend import LocalMockLLMBackend
+from agentos_next.pa.task_graph import FileTaskGraphStore
 from agentos_next.runtime.local_executor import LocalExecutor
 from agentos_next.runtime.package_runner import PackageRunner
-from agentos_next.pa.task_graph import FileTaskGraphStore
 
 
 def _caps(*names: str) -> dict[str, Any]:

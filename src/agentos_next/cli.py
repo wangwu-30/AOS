@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import argparse
+import asyncio
 import hashlib
 import json
 import sys
@@ -13,34 +13,55 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from agentos_next.apps.personal_assistant_demo import PersonalAssistantDemoRequest, run_personal_assistant_demo
 from agentos_next.apps.assistant_loop import AssistantLoopRequest
 from agentos_next.apps.assistant_runtime import run_assistant_runtime_async
 from agentos_next.apps.canonical_task_ingress import build_canonical_task_ingress_request
-from agentos_next.apps.channel_gateway import ChannelGatewayConfig, ChannelGatewayService, ChannelInputError
-from agentos_next.apps.daemon_runner import DaemonRunRequest, read_daemon_status, run_daemon_async, run_daemon_once_async
+from agentos_next.apps.channel_gateway import (
+    ChannelGatewayConfig,
+    ChannelGatewayService,
+    ChannelInputError,
+)
+from agentos_next.apps.daemon_runner import (
+    DaemonRunRequest,
+    read_daemon_status,
+    run_daemon_async,
+    run_daemon_once_async,
+)
 from agentos_next.apps.pa_polling_service import PAPollingService, PAPollingServiceConfig
 from agentos_next.apps.pa_webhook_server import PAWebhookService, PAWebhookServiceConfig
+from agentos_next.apps.personal_assistant_demo import (
+    PersonalAssistantDemoRequest,
+    run_personal_assistant_demo,
+)
 from agentos_next.apps.scheduler_tick import SchedulerTickRequest, run_scheduler_tick_async
 from agentos_next.apps.si1 import si1_observe, si1_propose, si1_validate
-from agentos_next.apps.ui1 import UI1RunOnceRequest, ui1_approve, ui1_list_approvals, ui1_reject, ui1_run_once
+from agentos_next.apps.ui1 import (
+    UI1RunOnceRequest,
+    ui1_approve,
+    ui1_list_approvals,
+    ui1_reject,
+    ui1_run_once,
+)
 from agentos_next.creator import CreatorError, build_creator_plan
 from agentos_next.evals import compare_memory_effect_reports, run_memory_effect_eval
+from agentos_next.kernel.dialog_state_machine import build_user_message_digest
+from agentos_next.kernel.evidence_store import FileEvidenceStore
 from agentos_next.kernel.executor import ExecuteRequest
 from agentos_next.kernel.orchestrator import Orchestrator
-from agentos_next.kernel.types import TraceContext
-from agentos_next.kernel.evidence_store import FileEvidenceStore
 from agentos_next.kernel.skill_registry import FileSkillRegistry, SkillRegistryError
-from agentos_next.kernel.dialog_state_machine import build_user_message_digest
 from agentos_next.kernel.trace_logger import FileTraceLogger
-from agentos_next.kernel.types import TraceEvent
+from agentos_next.kernel.types import TraceContext, TraceEvent
 from agentos_next.llm import is_remote_llm_backend
+from agentos_next.pa.runtime_error_codes import PA_RUNTIME_ERROR_REPLAY_DENY
 from agentos_next.release.pack import cmd_mvp_rc_pack, cmd_mvp_release_pack
 from agentos_next.runtime.local_executor import LocalExecutor
-from agentos_next.runtime.package_runner import PackageRunRequest, PackageRunner
+from agentos_next.runtime.package_runner import PackageRunner, PackageRunRequest
 from agentos_next.runtime.task_runner import SkillInvocation, TaskRunner, load_skill_contract
-from agentos_next.tools.trace_view import build_trace_view, render_trace_view_html, trace_serve_response
-from agentos_next.pa.runtime_error_codes import PA_RUNTIME_ERROR_REPLAY_DENY
+from agentos_next.tools.trace_view import (
+    build_trace_view,
+    render_trace_view_html,
+    trace_serve_response,
+)
 
 _PA_POLLING_TRANSIENT_ERRORS = {
     "E_PA_POLLING_TRANSIENT_NETWORK",
@@ -978,7 +999,7 @@ def cmd_mvp_channel_stdio(args: argparse.Namespace) -> int:
 
             try:
                 payload = _parse_channel_line(raw, json_lines=bool(args.json_lines))
-            except Exception as e:
+            except Exception:
                 print(
                     json.dumps(
                         _channel_error_output(
@@ -1484,6 +1505,7 @@ def cmd_mvp_pa_polling(args: argparse.Namespace) -> int:
 
 def cmd_mvp_pa_login_openai(args: argparse.Namespace) -> int:
     import urllib.parse
+
     from agentos_next.llm.openai_codex_oauth import OpenAICodexOAuthProvider
 
     p = OpenAICodexOAuthProvider(

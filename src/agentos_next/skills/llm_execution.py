@@ -5,8 +5,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping, Optional
 
-from agentos_next.llm.backend import LLMBackend, LLMSafetyGate, LLMCallError, LocalMockLLMBackend
 from agentos_next.kernel.capabilities import parse_capabilities
+from agentos_next.llm.backend import LLMBackend, LLMCallError, LLMSafetyGate, LocalMockLLMBackend
 
 from .jsonschema_subset import ValidationError, synthesize_instance, validate_instance
 from .package_loader import SkillPackage

@@ -18,9 +18,8 @@ from agentos_next.kernel.types import TraceContext, TraceEvent
 from agentos_next.pa.event_log import FileEventLog
 from agentos_next.pa.outbox_store import FileOutboxStore, OutboxItem
 from agentos_next.pa.task_graph import FileTaskGraphStore, add_task, compute_task_fingerprint
-from agentos_next.runtime.package_runner import PackageRunRequest, PackageRunner
+from agentos_next.runtime.package_runner import PackageRunner, PackageRunRequest
 from agentos_next.tools.trace_view import build_trace_catalog, trace_serve_response
-
 from tests.admission_helpers import make_minimal_skill_package
 
 

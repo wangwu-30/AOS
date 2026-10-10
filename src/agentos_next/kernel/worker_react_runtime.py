@@ -9,7 +9,6 @@ from typing import Any, Awaitable, Callable
 
 from agentos_next.kernel.execution_lane import READ_ONLY_OPERATOR_PREFIXES, is_read_only_operator
 
-
 READ_ONLY_TOOL_PREFIXES = READ_ONLY_OPERATOR_PREFIXES
 
 

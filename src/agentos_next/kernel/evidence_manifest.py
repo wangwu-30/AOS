@@ -9,8 +9,12 @@ from pathlib import Path
 from typing import Any, Optional, Sequence
 
 from agentos_next.kernel.types import EvidenceRef, TraceContext
-from agentos_next.protocol.asvp.crypto_ed25519 import ASVPCryptoUnavailable, generate_keypair, sign, verify
-
+from agentos_next.protocol.asvp.crypto_ed25519 import (
+    ASVPCryptoUnavailable,
+    generate_keypair,
+    sign,
+    verify,
+)
 
 SCHEMA_VERSION = "1.0.0"
 

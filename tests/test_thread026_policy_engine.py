@@ -6,14 +6,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import bootstrap  # noqa: F401
+from admission_helpers import make_minimal_skill_package
 
 from agentos_next.kernel.evidence_store import FileEvidenceStore
 from agentos_next.kernel.executor import ExecuteRequest
 from agentos_next.kernel.orchestrator import Orchestrator
 from agentos_next.kernel.types import TraceContext
 from agentos_next.runtime.local_executor import LocalExecutor
-
-from admission_helpers import make_minimal_skill_package
 
 
 def _set_risk_level(pkg_dir: Path, risk_level: str) -> None:

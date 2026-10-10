@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-
 ExecutionLane = Literal[
     "fast_chat",
     "standard_task",

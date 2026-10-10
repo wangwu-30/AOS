@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-
 SCHEMA_VERSION = "1.0.0"
 MAX_SCAN_BYTES = 1_000_000
 

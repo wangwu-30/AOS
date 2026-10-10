@@ -3,13 +3,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from agentos_next.apps.assistant_loop import AssistantLoopRequest, AssistantLoopResult, run_assistant_loop_async
+from agentos_next.apps.assistant_loop import (
+    AssistantLoopRequest,
+    AssistantLoopResult,
+    run_assistant_loop_async,
+)
 from agentos_next.apps.canonical_task_ingress import (
     CanonicalTaskIngressRequest,
     normalize_canonical_task_ingress_request,
     record_canonical_task_ingress,
 )
-
 
 AssistantRuntimeMode = Literal["direct", "hybrid"]
 

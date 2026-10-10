@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 import bootstrap  # noqa: F401
-
 from admission_helpers import make_minimal_skill_package
+
 from agentos_next.kernel.capabilities import capability_items_for_policy_context, parse_capabilities
 from agentos_next.kernel.executor import ExecuteRequest
 from agentos_next.kernel.orchestrator import Orchestrator

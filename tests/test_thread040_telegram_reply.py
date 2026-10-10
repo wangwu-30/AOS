@@ -1,13 +1,15 @@
-import unittest
-import tempfile
-import json
 import io
+import json
+import tempfile
 import time
+import unittest
 import urllib.error
 from unittest.mock import MagicMock, patch
+
+from agentos_next.apps.telegram_reply import TelegramReplyAdapter
 from agentos_next.pa.event_log import FileEventLog
 from agentos_next.pa.outbox_store import OutboxItem
-from agentos_next.apps.telegram_reply import TelegramReplyAdapter
+
 
 class TestThread040TelegramReply(unittest.TestCase):
     @staticmethod

@@ -16,13 +16,14 @@ for p in (str(TESTS), str(SRC)):
         sys.path.insert(0, p)
 
 from admission_helpers import make_minimal_skill_package
-from agentos_next.apps.telegram_connector import TelegramChannelAdapter
-from agentos_next.pa.ev1_runtime import EV1Config, EV1Runtime
-from agentos_next.kernel.evidence_store import FileEvidenceStore
 from fixtures.telegram_webhook_fixtures import (
     generate_secret_token_fixture,
     generate_telegram_webhook_fixture,
 )
+
+from agentos_next.apps.telegram_connector import TelegramChannelAdapter
+from agentos_next.kernel.evidence_store import FileEvidenceStore
+from agentos_next.pa.ev1_runtime import EV1Config, EV1Runtime
 
 
 class _CaptureDispatcher:

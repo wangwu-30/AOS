@@ -13,8 +13,8 @@ from agentos_next.kernel.local_skill_approval import (
 )
 from agentos_next.kernel.task_service import KernelTaskService, TaskSpec
 from agentos_next.kernel.worker_react_runtime import (
-    WorkerReasonDecision,
     WorkerReActRuntime,
+    WorkerReasonDecision,
     WorkerStopPolicy,
     WorkerTaskRuntimeInput,
     WorkerTokenBudget,

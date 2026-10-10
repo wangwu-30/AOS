@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Any, Iterable, Sequence
 
-from agentos_next.kernel.capabilities import ALLOWED_CAPABILITY_NAMES, capability_items_for_policy_context
+from agentos_next.kernel.capabilities import (
+    ALLOWED_CAPABILITY_NAMES,
+    capability_items_for_policy_context,
+)
 
 
 def _normalize_capability_names(raw: Iterable[str]) -> list[str]:

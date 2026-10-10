@@ -11,10 +11,18 @@ import bootstrap  # noqa: F401
 from agentos_next.apps.telegram_connector import TelegramChannelAdapter
 from agentos_next.kernel.evidence_store import FileEvidenceStore
 from agentos_next.kernel.executor import ExecuteResult, ExecuteTiming
-from agentos_next.kernel.memory_store import MEMORY_V2_SCHEMA_VERSION, FileMemoryStore, MemoryScopeV2
+from agentos_next.kernel.memory_store import (
+    MEMORY_V2_SCHEMA_VERSION,
+    FileMemoryStore,
+    MemoryScopeV2,
+)
 from agentos_next.kernel.runtime_snapshot_store import FileRuntimeSnapshotStore
-from agentos_next.pa.ev1_runtime import EV1Config, EV1Runtime, PA_EV_ERROR_CONTEXT_FAILED
-from agentos_next.pa.memory_pipeline import PA_MEM_ERROR_SCHEMA_INVALID, PAMemoryPipelineConfig, build_memory_context_for_event
+from agentos_next.pa.ev1_runtime import PA_EV_ERROR_CONTEXT_FAILED, EV1Config, EV1Runtime
+from agentos_next.pa.memory_pipeline import (
+    PA_MEM_ERROR_SCHEMA_INVALID,
+    PAMemoryPipelineConfig,
+    build_memory_context_for_event,
+)
 from tests.admission_helpers import make_minimal_skill_package
 from tests.fixtures.telegram_webhook_fixtures import (
     generate_secret_token_fixture,

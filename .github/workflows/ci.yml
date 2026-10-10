@@ -24,7 +24,6 @@ jobs:
     defaults:
       run:
         shell: bash
-        working-directory: agentos-next
 
     steps:
       - name: Checkout
@@ -35,7 +34,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: agentos-next/pyproject.toml
+          cache-dependency-path: pyproject.toml
 
       - name: Install Dev Extras
         run: |

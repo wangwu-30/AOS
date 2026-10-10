@@ -9,13 +9,16 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Optional
 
-from agentos_next.kernel.evidence_manifest import ManifestWriteRequest, verify_turn_manifest, write_turn_manifest_once
+from agentos_next.kernel.evidence_manifest import (
+    ManifestWriteRequest,
+    verify_turn_manifest,
+    write_turn_manifest_once,
+)
 from agentos_next.kernel.evidence_store import FileEvidenceStore
 from agentos_next.kernel.executor import ExecuteRequest
 from agentos_next.kernel.policy_engine import evaluate_execute_policy
 from agentos_next.kernel.trace_logger import FileTraceLogger
 from agentos_next.kernel.types import EvidenceRef, TraceContext, TraceEvent
-
 
 SCHEMA_VERSION = "1.0.0"
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
-import re
 from typing import Any, Optional
 
 from agentos_next.kernel.evidence_store import FileEvidenceStore
@@ -16,7 +16,6 @@ from agentos_next.kernel.memory_store import (
     MemoryStoreV2,
 )
 from agentos_next.kernel.runtime_snapshot_store import ContinuityHeadV2, FileRuntimeSnapshotStore
-
 
 PA_MEM_ERROR_SCHEMA_INVALID = "E_PA_MEM_SCHEMA_INVALID"
 PA_MEM_ERROR_COMPILE_FAILED = "E_PA_MEM_COMPILE_FAILED"

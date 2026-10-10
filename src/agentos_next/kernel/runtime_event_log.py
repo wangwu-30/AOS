@@ -7,7 +7,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Literal, Optional
 
-
 OutputEventType = Literal["ack", "progress", "reply_delta", "artifact", "blocker", "need_context", "done"]
 
 

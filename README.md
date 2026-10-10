@@ -19,7 +19,7 @@ AgentOS Next 的当前目标不是“更会聊天”，而是一个可开源的�
 ### 安装
 
 ```bash
-cd agentos-next
+cd AOS
 python3 -m pip install -e ".[dev]"
 python3 -m playwright install chromium
 ```

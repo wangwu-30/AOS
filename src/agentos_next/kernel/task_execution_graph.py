@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-
 TASK_EXECUTION_GRAPH_SCHEMA_VERSION = "1.0.0"
 TASK_EXECUTION_GRAPH_TYPE = "task_execution_graph_v1"
 

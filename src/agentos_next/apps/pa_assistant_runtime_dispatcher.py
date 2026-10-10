@@ -4,22 +4,22 @@ import asyncio
 import hashlib
 import json
 import mimetypes
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Callable, Optional
 import urllib.error
 import urllib.parse
 import urllib.request
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable, Optional
 
 from agentos_next.apps.assistant_loop import AssistantLoopRequest, AssistantLoopResult
 from agentos_next.apps.canonical_task_ingress import build_canonical_task_ingress_request
 from agentos_next.apps.telegram_reply import TelegramReplyAdapter
-from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult
 from agentos_next.kernel.effective_runtime_capabilities import (
     build_effective_runtime_capabilities_v1,
     capability_names_from_effective_runtime_capabilities,
 )
 from agentos_next.kernel.evidence_store import FileEvidenceStore
+from agentos_next.kernel.executor import ExecuteRequest, ExecuteResult
 from agentos_next.kernel.orchestrator import Orchestrator
 from agentos_next.kernel.types import TraceContext
 from agentos_next.pa.event_envelope import envelope_to_dict, validate_envelope_v0
